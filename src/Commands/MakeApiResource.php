@@ -40,9 +40,9 @@ class MakeApiResource extends Command
             return 0;
         }
 
-        //        $this->copyController();
-        //        $this->copyActions();
-        //        $this->copyRequests();
+        $this->copyController();
+        $this->copyActions();
+        $this->copyRequests();
         $this->copyResource();
 
         $this->info('Api resource created...');
