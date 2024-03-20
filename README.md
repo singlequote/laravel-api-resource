@@ -1,8 +1,8 @@
 # Laravel Api Resource generator
 Generate api resources using the default laravel methods
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/singlequote/laravel-model-seeder.svg?style=flat-square)](https://packagist.org/packages/singlequote/laravel-model-seeder)
-[![Total Downloads](https://img.shields.io/packagist/dt/singlequote/laravel-model-seeder.svg?style=flat-square)](https://packagist.org/packages/singlequote/laravel-model-seeder)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/singlequote/laravel-api-resource.svg?style=flat-square)](https://packagist.org/packages/singlequote/laravel-api-resource)
+[![Total Downloads](https://img.shields.io/packagist/dt/singlequote/laravel-api-resource.svg?style=flat-square)](https://packagist.org/packages/singlequote/laravel-api-resource)
 
 
 ## Contributing
