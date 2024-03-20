@@ -1,3 +1,0 @@
-        DB::connection("<connection>")->table("<table>")->insert([
-<lines>
-        ]);

@@ -1,0 +1,41 @@
+<?php
+declare(strict_types=1);
+
+namespace <namespace>;
+
+use <requestNamespace>\<modelPlural>\Index<modelName>Request;
+use <resourceNamespace>\<modelName>Resource;
+use SingleQuote\LaravelApiResource\Infra\Action;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use <modelPath>;
+
+final class Index<modelPlural>Action extends Action
+{
+    /**
+     * @param Index<modelName>Request $request
+     * @return JsonResponse|AnonymousResourceCollection
+     */
+    public function handle(Index<modelName>Request $request): JsonResponse|AnonymousResourceCollection
+    {
+        /** @var Builder $query */
+        $query = <modelName>::apiDefaults($request);
+
+        $this->loadAdditionals($request, $query);
+
+        $<modelLowerPlural> = $query->paginate($request->validated('limit', config('laravel-api-resource.api.limit', 1000)));
+
+        return $this->withData(<modelName>Resource::collection($<modelLowerPlural>))->result();
+    }
+
+    /**
+     * @param Index<modelName>Request $request
+     * @param Builder $query
+     * @return Builder
+     */
+    private function loadAdditionals(Index<modelName>Request $request, Builder &$query): Builder
+    {
+        return $query;
+    }
+}

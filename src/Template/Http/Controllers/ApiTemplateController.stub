@@ -1,0 +1,81 @@
+<?php
+declare(strict_types=1);
+
+namespace <namespace>;
+
+use <actionNamespace>\<modelPlural>\Delete<modelName>Action;
+use <actionNamespace>\<modelPlural>\Index<modelPlural>Action;
+use <actionNamespace>\<modelPlural>\Show<modelName>Action;
+use <actionNamespace>\<modelPlural>\Store<modelName>Action;
+use <actionNamespace>\<modelPlural>\Update<modelName>Action;
+use App\Http\Controllers\Controller;
+use <requestNamespace>\<modelPlural>\Index<modelName>Request;
+use <requestNamespace>\<modelPlural>\Show<modelName>Request;
+use <requestNamespace>\<modelPlural>\Store<modelName>Request;
+use <requestNamespace>\<modelPlural>\Update<modelName>Request;
+use <modelPath>;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Symfony\Component\HttpFoundation\JsonResponse;
+
+class Api<modelName>Controller extends Controller
+{
+    public function __construct()
+    {
+        $this->authorizeResource(<modelName>::class);
+    }
+
+    /**
+     * @param Index<modelName>Request $request
+     * @param Index<modelPlural>sAction $action
+     * @return JsonResponse|AnonymousResourceCollection
+     */
+    public function index(Index<modelName>Request $request, Index<modelPlural>Action $action): JsonResponse|AnonymousResourceCollection
+    {
+        return $action->api()->onSuccess(function (AnonymousResourceCollection $data) {
+            return $data;
+        })->handle($request);
+    }
+
+    /**
+     * @param Show<modelName>Request $request
+     * @param <modelName> $<modelLower>
+     * @param Show<modelName>Action $action
+     * @return JsonResponse
+     */
+    public function show(Show<modelName>Request $request, <modelName> $<modelLower>, Show<modelName>Action $action): JsonResponse
+    {
+        return $action->api()->handle($request, $<modelLower>);
+    }
+
+    /**
+     * @param Store<modelName>Request $request
+     * @param Store<modelName>Action $action
+     * @return JsonResponse
+     */
+    public function store(Store<modelName>Request $request, Store<modelName>Action $action): JsonResponse
+    {
+        return $action->api()->handle($request);
+    }
+
+    /**
+     * @param Update<modelName>Request $request
+     * @param <modelName> $<modelLower>
+     * @param Update<modelName>Action $action
+     * @return JsonResponse
+     */
+    public function update(Update<modelName>Request $request, <modelName> $<modelLower>, Update<modelName>Action $action): JsonResponse
+    {
+        return $action->api()->handle($request, $<modelLower>);
+    }
+
+    /**
+     * @param <modelName> $<modelLower>
+     * @param Delete<modelName>Action $action
+     * @return JsonResponse
+     */
+    public function destroy(<modelName> $<modelLower>, Delete<modelName>Action $action): JsonResponse
+    {
+        return $action->api()->handle($<modelLower>);
+    }
+
+}

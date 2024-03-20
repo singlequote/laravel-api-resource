@@ -1,0 +1,53 @@
+<?php
+declare(strict_types=1);
+
+namespace <namespace>;
+
+use SingleQuote\LaravelApiResource\Service\ApiPolicyService;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class <modelName>Resource extends JsonResource
+{
+    /**
+     * Transform the resource into an array.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        return [<fillables>
+            
+            'created_at' => $this->whenHas('created_at'),
+            'updated_at' => $this->whenHas('updated_at'),
+            'deleted_at' => $this->whenHas('deleted_at'),
+
+            ... $this->getRelations(),
+            ... $this->getParse($request->get('parse', [])),
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    private function getRelations(): array
+    {
+        return [<relations>
+        ];
+    }
+
+    /**
+     * @param array $parse
+     * @return array
+     */
+    private function getParse(array $parse): array
+    {
+        $resources = [];
+
+        if (in_array('policies', $parse)) {
+            $resources['policies'] = ApiPolicyService::defaults($this->resource);
+        }
+
+        return $resources;
+    }
+}

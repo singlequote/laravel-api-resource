@@ -1,0 +1,26 @@
+<?php
+
+declare(strict_types=1);
+
+namespace <namespace>;
+
+use <requestNamespace>\<modelPlural>\Update<modelName>Request;
+use <resourceNamespace>\<modelName>Resource;
+use SingleQuote\LaravelApiResource\Infra\Action;
+use <modelPath>;
+use Illuminate\Http\JsonResponse;
+
+final class Update<modelName>Action extends Action
+{
+    /**
+     * @param Update<modelName>Request $request
+     * @param <modelName> $<modelLower>
+     * @return JsonResponse
+     */
+    public function handle(Update<modelName>Request $request, <modelName> $<modelLower>): JsonResponse
+    {
+        $<modelLower>->update($request->validated());
+       
+        return $this->withData(new <modelName>Resource($<modelLower>))->result();
+    }
+}

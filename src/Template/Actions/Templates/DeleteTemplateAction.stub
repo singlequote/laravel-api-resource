@@ -1,0 +1,22 @@
+<?php
+declare(strict_types=1);
+
+namespace <namespace>;
+
+use SingleQuote\LaravelApiResource\Infra\Action;
+use Illuminate\Http\JsonResponse;
+use <modelPath>;
+
+final class Delete<modelName>Action extends Action
+{
+    /**
+     * @param <modelName> $<modelLower>
+     * @return JsonResponse
+     */
+    public function handle(<modelName> $<modelLower>): JsonResponse
+    {
+        $result = $<modelLower>->delete();
+
+        return $this->withData($result)->result();
+    }
+}

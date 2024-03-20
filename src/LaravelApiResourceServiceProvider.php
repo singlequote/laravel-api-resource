@@ -2,7 +2,8 @@
 namespace SingleQuote\LaravelApiResource;
 
 use Illuminate\Support\ServiceProvider;
-use SingleQuote\LaravelApiResource\Commands\Make;
+use SingleQuote\LaravelApiResource\Commands\MakeApiResource;
+use function config_path;
 
 class LaravelApiResourceServiceProvider extends ServiceProvider
 {
@@ -13,18 +14,17 @@ class LaravelApiResourceServiceProvider extends ServiceProvider
      * @var array
      */
     protected $commands = [
-        Make::class,
+        MakeApiResource::class,
     ];
 
-    
     /**
      * Bootstrap the application services.
      */
     public function boot()
     {
         $this->publishes([
-            __DIR__.'/config/config.php' => config_path('model-seeder.php')
-        ], 'model-seeder');
+            __DIR__ . '/config/config.php' => config_path('laravel-api-resource.php')
+        ], 'laravel-api-resource');
     }
 
     /**
@@ -35,14 +35,9 @@ class LaravelApiResourceServiceProvider extends ServiceProvider
         //config
         $this->mergeConfigFrom(
             __DIR__ . '/config/config.php',
-            'model-seeder'
+            'laravel-api-resource'
         );
 
-        app()->config["filesystems.disks.LaravelApiResource"] = [
-            'driver' => 'local',
-            'root' => config('model-seeder.paths.lang_folder'),
-        ];
-                
         $this->commands($this->commands);
     }
 }

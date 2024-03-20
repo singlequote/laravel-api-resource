@@ -1,0 +1,26 @@
+<?php
+
+declare(strict_types=1);
+
+namespace <namespace>;
+
+use <requestNamespace>\<modelPlural>\Show<modelName>Request;
+use <resourceNamespace>\<modelName>Resource;
+use SingleQuote\LaravelApiResource\Infra\Action;
+use <modelPath>;
+use Illuminate\Http\JsonResponse;
+
+final class Show<modelName>Action extends Action
+{
+    /**
+     * @param Show<modelName>Request $request
+     * @param <modelName> $<modelLower>
+     * @return JsonResponse
+     */
+    public function handle(Show<modelName>Request $request, <modelName> $<modelLower>): JsonResponse
+    {
+        $<modelLower>->modelDefaults($request);
+
+        return $this->withData(new <modelName>Resource($<modelLower>))->result();
+    }
+}

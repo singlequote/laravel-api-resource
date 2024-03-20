@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+namespace <namespace>;
+
+use <requestNamespace>\<modelPlural>\Store<modelName>Request;
+use <resourceNamespace>\<modelName>Resource;
+use SingleQuote\LaravelApiResource\Infra\Action;
+use <modelPath>;
+use Illuminate\Http\JsonResponse;
+
+final class Store<modelName>Action extends Action
+{
+    /**
+     * @param Store<modelName>Request $request
+     * @return JsonResponse
+     */
+    public function handle(Store<modelName>Request $request): JsonResponse
+    {
+        $<modelLower> = <modelName>::create($request->validated());
+       
+        return $this->withData(new <modelName>Resource($<modelLower>))->result();
+    }
+}
