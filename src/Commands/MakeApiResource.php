@@ -1,4 +1,5 @@
 <?php
+
 namespace SingleQuote\LaravelApiResource\Commands;
 
 use Illuminate\Console\Command;
@@ -6,15 +7,14 @@ use Illuminate\Support\Facades\File;
 use SingleQuote\LaravelApiResource\Service\ApiRequestService;
 use SingleQuote\LaravelApiResource\Traits\HasApi;
 use Symfony\Component\Finder\SplFileInfo;
+
 use function base_path;
 use function class_uses_recursive;
 use function config;
-use function ddd;
 use function str;
 
 class MakeApiResource extends Command
 {
-
     /**
      * The name and signature of the console command.
      *
@@ -29,9 +29,6 @@ class MakeApiResource extends Command
      */
     protected $description = 'Create new Api resource';
 
-    /**
-     * @var object
-     */
     private object $config;
 
     /**
@@ -39,21 +36,18 @@ class MakeApiResource extends Command
      */
     public function handle()
     {
-        if (!$this->determineModelExists()) {
+        if (! $this->determineModelExists()) {
             return 0;
         }
 
-//        $this->copyController();
-//        $this->copyActions();
-//        $this->copyRequests();
+        //        $this->copyController();
+        //        $this->copyActions();
+        //        $this->copyRequests();
         $this->copyResource();
 
-        $this->info("Api resource created...");
+        $this->info('Api resource created...');
     }
 
-    /**
-     * @return bool
-     */
     private function determineModelExists(): bool
     {
         $name = $this->argument('model');
@@ -61,16 +55,18 @@ class MakeApiResource extends Command
         if (str($name)->contains('/')) {
             $modelPath = str($name)->replace('/', '\\')->value();
         } else {
-            $modelPath = $this->getConfig('namespaces.models') . "\\$name";
+            $modelPath = $this->getConfig('namespaces.models')."\\$name";
         }
 
-        if (!class_exists($modelPath)) {
+        if (! class_exists($modelPath)) {
             $this->error("The provided model could not be found! $modelPath::class");
+
             return false;
         }
 
-        if (!in_array(HasApi::class, class_uses_recursive($modelPath))) {
-            $this->error("The provided model does not include the HasApi trait!");
+        if (! in_array(HasApi::class, class_uses_recursive($modelPath))) {
+            $this->error('The provided model does not include the HasApi trait!');
+
             return false;
         }
 
@@ -81,32 +77,22 @@ class MakeApiResource extends Command
         return true;
     }
 
-    /**
-     * @param string $modelPath
-     * @return void
-     */
     private function fillConfig(string $modelPath): void
     {
         $this->config = (object) [
-                'model' => new $modelPath,
-                'modelPath' => (new $modelPath)::class,
-                'modelName' => str((new $modelPath)::class)->afterLast("\\"),
-                'modelPlural' => str((new $modelPath)::class)->afterLast("\\")->plural(),
-                'modelLowerPlural' => str((new $modelPath)::class)->afterLast("\\")->lower()->plural(),
+            'model' => new $modelPath,
+            'modelPath' => (new $modelPath)::class,
+            'modelName' => str((new $modelPath)::class)->afterLast('\\'),
+            'modelPlural' => str((new $modelPath)::class)->afterLast('\\')->plural(),
+            'modelLowerPlural' => str((new $modelPath)::class)->afterLast('\\')->lower()->plural(),
         ];
     }
 
-    /**
-     * @param string $configName
-     * @param mixed $default
-     * @param bool $replaceKeys
-     * @return string
-     */
     private function getConfig(string $configName, mixed $default = null, bool $replaceKeys = true): string
     {
         $config = config("laravel-api-resource.$configName", $default);
 
-        if (str($config)->contains('module') && !$replaceKeys) {
+        if (str($config)->contains('module') && ! $replaceKeys) {
             return str($config)->replace('{module}', '');
         }
 
@@ -117,22 +103,19 @@ class MakeApiResource extends Command
         return $config;
     }
 
-    /**
-     * @return void
-     */
     private function copyController(): void
     {
         $newPath = base_path($this->getConfig('namespaces.controllers'));
 
-        if (File::exists("$newPath/Api{$this->config->modelName}Controller.php") && !$this->confirm("Api{$this->config->modelName}Controller.php already exists, overwrite it?", true)) {
+        if (File::exists("$newPath/Api{$this->config->modelName}Controller.php") && ! $this->confirm("Api{$this->config->modelName}Controller.php already exists, overwrite it?", true)) {
             return;
         }
 
-        if (!File::isDirectory($newPath)) {
+        if (! File::isDirectory($newPath)) {
             File::makeDirectory($newPath);
         }
 
-        File::copy(__DIR__ . "/../Template/Http/Controllers/ApiTemplateController.stub", "$newPath/Api{$this->config->modelName}Controller.php");
+        File::copy(__DIR__.'/../Template/Http/Controllers/ApiTemplateController.stub', "$newPath/Api{$this->config->modelName}Controller.php");
 
         $content = File::get("$newPath/Api{$this->config->modelName}Controller.php");
 
@@ -148,23 +131,20 @@ class MakeApiResource extends Command
         $this->updateFile("$newPath/Api{$this->config->modelName}Controller.php", $newContent);
     }
 
-    /**
-     * @return void
-     */
     private function copyActions(): void
     {
-        $newPath = base_path($this->getConfig('namespaces.actions') . "/{$this->config->modelPlural}");
+        $newPath = base_path($this->getConfig('namespaces.actions')."/{$this->config->modelPlural}");
 
         $this->deleteDirectory($newPath);
 
-        File::copyDirectory(__DIR__ . "/../Template/Actions/Templates", $newPath);
+        File::copyDirectory(__DIR__.'/../Template/Actions/Templates', $newPath);
 
         foreach (File::files($newPath) as $file) {
 
             $content = $file->getContents();
 
             $newContent = str($content)
-                ->replace('<namespace>', $this->getConfig('namespaces.actions') . "\\{$this->config->modelPlural}")
+                ->replace('<namespace>', $this->getConfig('namespaces.actions')."\\{$this->config->modelPlural}")
                 ->replace('<modelLower>', str($this->config->modelName)->lcFirst())
                 ->replace('<modelPath>', $this->config->modelPath)
                 ->replace('<modelPlural>', $this->config->modelPlural)
@@ -174,9 +154,9 @@ class MakeApiResource extends Command
                 ->replace('<resourceNamespace>', $this->getConfig('namespaces.resources'));
 
             $newName = str($file->getFilename())
-                ->replace("Templates", $this->config->modelPlural)
-                ->replace("Template", $this->config->modelName)
-                ->replace(".stub", '.php');
+                ->replace('Templates', $this->config->modelPlural)
+                ->replace('Template', $this->config->modelName)
+                ->replace('.stub', '.php');
 
             $this->storeFile("$newPath/$newName", $newContent);
 
@@ -184,29 +164,26 @@ class MakeApiResource extends Command
         }
     }
 
-    /**
-     * @return void
-     */
     private function copyRequests(): void
     {
-        $newPath = base_path($this->getConfig('namespaces.requests') . "/{$this->config->modelPlural}");
+        $newPath = base_path($this->getConfig('namespaces.requests')."/{$this->config->modelPlural}");
 
         $this->deleteDirectory($newPath);
 
-        File::copyDirectory(__DIR__ . "/../Template/Http/Requests/Templates", $newPath);
+        File::copyDirectory(__DIR__.'/../Template/Http/Requests/Templates', $newPath);
 
         foreach (File::files($newPath) as $file) {
             $content = $file->getContents();
 
             $newContent = str($content)
-                ->replace('<namespace>', $this->getConfig('namespaces.requests') . "\\{$this->config->modelPlural}")
+                ->replace('<namespace>', $this->getConfig('namespaces.requests')."\\{$this->config->modelPlural}")
                 ->replace('<modelPath>', $this->config->modelPath)
                 ->replace('<modelName>', $this->config->modelName);
 
             $newName = str($file->getFilename())
-                ->replace("Templates", $this->config->modelPlural)
-                ->replace("Template", $this->config->modelName)
-                ->replace(".stub", '.php');
+                ->replace('Templates', $this->config->modelPlural)
+                ->replace('Template', $this->config->modelName)
+                ->replace('.stub', '.php');
 
             if (str($file->getFilename())->startsWith(['Update', 'Store'])) {
                 $newContent = $newContent->replace('<fillables>', $this->getFillablesForRequest(str($file->getFilename())->startsWith('Update') ? 'sometimes' : 'required'))
@@ -219,22 +196,19 @@ class MakeApiResource extends Command
         }
     }
 
-    /**
-     * @return void
-     */
     private function copyResource(): void
     {
         $newPath = base_path($this->getConfig('namespaces.resources'));
 
-        if (File::exists("$newPath/{$this->config->modelName}Resource.php") && !$this->confirm("{$this->config->modelName}Resource.php already exists, overwrite it?", true)) {
+        if (File::exists("$newPath/{$this->config->modelName}Resource.php") && ! $this->confirm("{$this->config->modelName}Resource.php already exists, overwrite it?", true)) {
             return;
         }
 
-        if (!File::isDirectory($newPath)) {
+        if (! File::isDirectory($newPath)) {
             File::makeDirectory($newPath);
         }
 
-        File::copy(__DIR__ . "/../Template/Http/Resources/TemplateResource.stub", "$newPath/{$this->config->modelName}Resource.php");
+        File::copy(__DIR__.'/../Template/Http/Resources/TemplateResource.stub', "$newPath/{$this->config->modelName}Resource.php");
 
         $content = File::get("$newPath/{$this->config->modelName}Resource.php");
 
@@ -247,14 +221,11 @@ class MakeApiResource extends Command
         $this->updateFile("$newPath/{$this->config->modelName}Resource.php", $newContent);
     }
 
-    /**
-     * @return string
-     */
     private function getFillablesForResource(): string
     {
         $fillables = ApiRequestService::getFillable($this->config->modelPath);
 
-        $content = str("");
+        $content = str('');
 
         foreach (explode(',', $fillables) as $fillable) {
             if (in_array($fillable, config('laravel-api-resource.exclude.resources', []))) {
@@ -268,14 +239,11 @@ class MakeApiResource extends Command
         return $content;
     }
 
-    /**
-     * @return string
-     */
     private function getRelationsForResource(): string
     {
         $relations = ApiRequestService::getRelations($this->config->modelPath);
 
-        $content = str("");
+        $content = str('');
 
         foreach (explode(',', $relations) as $relation) {
             if (in_array($relation, config('laravel-api-resource.exclude.resources', []))) {
@@ -290,14 +258,14 @@ class MakeApiResource extends Command
             foreach ($files as $file) {
 
                 $namespace = $this->extractNamespace($file);
-                                
-                if (str($this->getClassName($relation))->startsWith(['HasOne', 'morphOne']) || $this->getClassName($relation) === "BelongsTo") {
+
+                if (str($this->getClassName($relation))->startsWith(['HasOne', 'morphOne']) || $this->getClassName($relation) === 'BelongsTo') {
                     $type = "new \\$namespace";
                 } else {
                     $type = "\\$namespace::collection";
                 }
 
-                if ($namespace && str($file->getFilename())->contains(str($model)->afterLast('\\')->append("Resource"))) {
+                if ($namespace && str($file->getFilename())->contains(str($model)->afterLast('\\')->append('Resource'))) {
                     $content = $content->append("
             '$relation' => $type(\$this->whenLoaded('$relation')),\r");
                 }
@@ -307,14 +275,11 @@ class MakeApiResource extends Command
         return $content;
     }
 
-    /**
-     * @return string
-     */
-    private function getFillablesForRequest($preFixed = "required"): string
+    private function getFillablesForRequest($preFixed = 'required'): string
     {
         $fillables = ApiRequestService::getFillable($this->config->modelPath);
 
-        $content = str("");
+        $content = str('');
 
         foreach (explode(',', $fillables) as $fillable) {
             if (in_array($fillable, config('laravel-api-resource.exclude.requests', [])) || $this->config->model->getKeyName() === $fillable) {
@@ -328,10 +293,6 @@ class MakeApiResource extends Command
         return $content;
     }
 
-    /**
-     * @param string $column
-     * @return string
-     */
     private function getRelationByColumn(string $column): string
     {
         $relations = ApiRequestService::getRelations($this->config->modelPath);
@@ -351,9 +312,6 @@ class MakeApiResource extends Command
 
     /**
      * Return className of relation
-     * 
-     * @param string $relation
-     * @return string
      */
     private function getClassName(string $relation): string
     {
@@ -363,14 +321,11 @@ class MakeApiResource extends Command
         return end($class);
     }
 
-    /**
-     * @return string
-     */
     private function getAttributesForRequest(): string
     {
         $fillables = ApiRequestService::getFillable($this->config->modelPath);
 
-        $content = str("");
+        $content = str('');
 
         foreach (explode(',', $fillables) as $fillable) {
             if (in_array($fillable, config('laravel-api-resource.exclude.requests', [])) || $this->config->model->getKeyName() === $fillable) {
@@ -390,11 +345,6 @@ class MakeApiResource extends Command
         return $content;
     }
 
-    /**
-     * @param string $path
-     * @param string $content
-     * @return void
-     */
     private function storeFile(string $path, string $content): void
     {
         $name = str($path)->afterLast('/');
@@ -404,17 +354,12 @@ class MakeApiResource extends Command
             File::put($path, $content);
         }
 
-        if (!File::exists($path)) {
+        if (! File::exists($path)) {
             File::put($path, $content);
             $this->info("Created: $name");
         }
     }
 
-    /**
-     * @param string $path
-     * @param string $content
-     * @return void
-     */
     private function updateFile(string $path, string $content): void
     {
         $name = str($path)->afterLast('/');
@@ -424,15 +369,11 @@ class MakeApiResource extends Command
             $this->info("Created: $name");
         }
 
-        if (!File::exists($path)) {
+        if (! File::exists($path)) {
             $this->error("File $name does not exists");
         }
     }
 
-    /**
-     * @param string $path
-     * @return void
-     */
     private function deleteDirectory(string $path): void
     {
         $name = str($path)->afterLast('');
@@ -442,22 +383,18 @@ class MakeApiResource extends Command
         }
     }
 
-    /**
-     * @param SplFileInfo $file
-     * @return string
-     */
     public function extractNamespace(SplFileInfo $file): ?string
     {
         $content = $file->getContents();
-        
-        if(str($content)->contains("<namespace>")){
+
+        if (str($content)->contains('<namespace>')) {
             return null;
         }
-        
+
         return str($content)
-                ->betweenFirst("namespace ", ";")
-                ->append('\\')
-                ->append($file->getFilename())
-                ->replace('.php', '');
+            ->betweenFirst('namespace ', ';')
+            ->append('\\')
+            ->append($file->getFilename())
+            ->replace('.php', '');
     }
 }

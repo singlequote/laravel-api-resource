@@ -1,8 +1,7 @@
 <?php
-namespace SingleQuote\LaravelApiResource;
 
+namespace SingleQuote\LaravelApiResource;
 
 class LaravelApiResource
 {
-    
 }

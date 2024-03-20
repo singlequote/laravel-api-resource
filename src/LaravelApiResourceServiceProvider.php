@@ -1,13 +1,14 @@
 <?php
+
 namespace SingleQuote\LaravelApiResource;
 
 use Illuminate\Support\ServiceProvider;
 use SingleQuote\LaravelApiResource\Commands\MakeApiResource;
+
 use function config_path;
 
 class LaravelApiResourceServiceProvider extends ServiceProvider
 {
-
     /**
      * Commands.
      *
@@ -23,7 +24,7 @@ class LaravelApiResourceServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->publishes([
-            __DIR__ . '/config/config.php' => config_path('laravel-api-resource.php')
+            __DIR__.'/config/config.php' => config_path('laravel-api-resource.php'),
         ], 'laravel-api-resource');
     }
 
@@ -34,7 +35,7 @@ class LaravelApiResourceServiceProvider extends ServiceProvider
     {
         //config
         $this->mergeConfigFrom(
-            __DIR__ . '/config/config.php',
+            __DIR__.'/config/config.php',
             'laravel-api-resource'
         );
 

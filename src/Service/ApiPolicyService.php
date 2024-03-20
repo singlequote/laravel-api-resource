@@ -10,10 +10,6 @@ use function auth;
 
 final class ApiPolicyService
 {
-    /**
-     * @param Model $model
-     * @return array
-     */
     public function defaults(Model $model): array
     {
         return [
@@ -26,5 +22,4 @@ final class ApiPolicyService
             'forceDelete' => auth()->user()->can('forceDelete', $model),
         ];
     }
-
 }
