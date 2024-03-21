@@ -27,8 +27,8 @@ class ApiRequestService
             'whereNotIn.*' => 'required|array',
 
             // Set WhereHas
-            'whereHas' => 'nullable|array',
-            'whereHas.*' => 'required|string|in:'.self::getRelations($model),
+            'has' => 'nullable|array',
+            'has.*' => 'required|string|in:'.self::getRelations($model),
 
             // Set Where Relation
             'whereRelation' => 'nullable|array',
