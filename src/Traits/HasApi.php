@@ -22,7 +22,7 @@ trait HasApi
             ->parseWhere($request->validated('where'))
             ->parseWhereIn($request->validated('whereIn'))
             ->parseWhereNotIn($request->validated('whereNotIn'))
-            ->parseWhereHas($request->validated('whereHas'))
+            ->parseHas($request->validated('whereHas'))
             ->parseWhereRelation($request->validated('whereRelation'));
     }
 
@@ -176,10 +176,10 @@ trait HasApi
         return $builder;
     }
 
-    public function scopeParseWhereHas(Builder $builder, ?array $scopes = []): Builder
+    public function scopeParseHas(Builder $builder, ?array $scopes = []): Builder
     {
         foreach ($scopes ?? [] as $scope) {
-            $builder->whereHas($scope);
+            $builder->has($scope);
         }
 
         return $builder;
