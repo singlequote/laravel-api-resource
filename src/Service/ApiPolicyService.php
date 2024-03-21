@@ -10,7 +10,7 @@ use function auth;
 
 final class ApiPolicyService
 {
-    public function defaults(Model $model): array
+    public static function defaults(Model $model): array
     {
         return [
             'viewAny' => auth()->user()->can('viewAny', $model::class),
