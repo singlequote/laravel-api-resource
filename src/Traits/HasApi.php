@@ -22,7 +22,7 @@ trait HasApi
             ->parseWhere($request->validated('where'))
             ->parseWhereIn($request->validated('whereIn'))
             ->parseWhereNotIn($request->validated('whereNotIn'))
-            ->parseHas($request->validated('whereHas'))
+            ->parseHas($request->validated('has'))
             ->parseWhereRelation($request->validated('whereRelation'));
     }
 
