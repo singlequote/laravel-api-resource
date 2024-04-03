@@ -12,7 +12,7 @@ class ApiRequestService
             // Search on results
             'search' => 'nullable|array',
             'search.fields' => 'nullable|array',
-            'search.query' => 'nullable|string|min:3|max:191',
+            'search.query' => 'nullable|string|min:2|max:191',
 
             // Set where
             'where' => 'nullable|array',
