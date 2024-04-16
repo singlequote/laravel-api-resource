@@ -4,6 +4,7 @@ namespace <namespace>;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Exists;
+use Illuminate\Database\Eloquent\Model;
 
 class Update<modelName>Request extends FormRequest
 {
