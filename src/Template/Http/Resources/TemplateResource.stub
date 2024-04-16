@@ -23,6 +23,7 @@ class <modelName>Resource extends JsonResource
             'deleted_at' => $this->whenHas('deleted_at'),
 
             ... $this->getRelations(),
+            ... $this->getSearch($request),
             ... $this->getParse($request->get('parse', [])),
         ];
     }
@@ -46,6 +47,21 @@ class <modelName>Resource extends JsonResource
 
         if (in_array('policies', $parse)) {
             $resources['policies'] = ApiPolicyService::defaults($this->resource);
+        }
+
+        return $resources;
+    }
+            
+    /**
+     * @param Request $request
+     * @return array
+     */
+    private function getSearch(Request $request): array
+    {
+        $resources = [];
+
+        if ($request->filled('search')) {
+            $resources['search'] = $this->name;
         }
 
         return $resources;
