@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\File;
 use SingleQuote\LaravelApiResource\Service\ApiRequestService;
 use SingleQuote\LaravelApiResource\Traits\HasApi;
 use Symfony\Component\Finder\SplFileInfo;
-use ZipStream\Exception;
+use Throwable;
 use function base_path;
 use function class_uses_recursive;
 use function collect;
@@ -46,10 +46,10 @@ class MakeApiResource extends Command
             return 0;
         }
 
-//        $this->copyController();
-//        $this->copyActions();
+        $this->copyController();
+        $this->copyActions();
         $this->copyRequests();
-//        $this->copyResource();
+        $this->copyResource();
 
         $this->info('Api resource created...');
     }
@@ -320,16 +320,15 @@ class MakeApiResource extends Command
     {
         $fillables = ApiRequestService::getFillable($this->config->modelPath);
 
-        
         $pdoColumns = $this->getPDOColumns();
-                    
+
         $content = str('');
 
         foreach (explode(',', $fillables) as $fillable) {
             if (in_array($fillable, config('laravel-api-resource.exclude.requests', [])) || $this->config->model->getKeyName() === $fillable) {
                 continue;
             }
-            
+
             $pdoColumn = $pdoColumns->firstWhere('name', $fillable);
 
             $content = $content->append("
@@ -339,23 +338,23 @@ class MakeApiResource extends Command
 
         return $content;
     }
-    
+
     /**
      * @return Collection
      */
     private function getPDOColumns(): Collection
     {
-        try{
+        try {
             $model = $this->config->model;
-            
+
             return collect(DB::connection($model->getConnectionName())
-                ->getSchemaBuilder()
-                ->getColumns(str($model->getTable())->afterLast('.')));
-        } catch (Exception $ex) {
+                    ->getSchemaBuilder()
+                    ->getColumns(str($model->getTable())->afterLast('.')));
+        } catch (Throwable $ex) {
             return collect([]);
         }
     }
-    
+
     /**
      * @param array $pdoColumn
      * @param string $preFixed
@@ -363,13 +362,13 @@ class MakeApiResource extends Command
      */
     private function ColumnRequired(array $pdoColumn, string $preFixed): string
     {
-        if(isset($pdoColumn['nullable']) && $pdoColumn['nullable']){
+        if (isset($pdoColumn['nullable']) && $pdoColumn['nullable']) {
             return "nullable";
         }
-        
+
         return $preFixed;
     }
-    
+
     /**
      * @param string $column
      * @return string
@@ -387,17 +386,17 @@ class MakeApiResource extends Command
                 return "\$this->ruleExists(new \\$model())";
             }
         }
-                
+
         return $this->getColumnType($pdoColumn);
     }
-    
+
     /**
      * @param array $pdoColumn
      * @return string
      */
     private function getColumnType(array $pdoColumn)
     {
-        switch($pdoColumn['type_name']){
+        switch ($pdoColumn['type_name'] ?? '') {
             case "varchar":
                 $max = str($pdoColumn['type'])->between('(', ')');
                 return "string|max:$max|min:1";
@@ -409,7 +408,7 @@ class MakeApiResource extends Command
                 $items = str($pdoColumn['type'])->between('(', ')')->replace("'", '');
                 return "in:$items";
         }
-        
+
         return "string";
     }
 
