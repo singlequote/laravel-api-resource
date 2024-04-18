@@ -59,12 +59,9 @@ Route::apiResource('users', UserController::class)->only('index', 'store', 'show
 ```
 ## Resource methods
 The package comes with default methods that can be used to quickly setup your api. For instance the policy service can be used to add policies to your resource response.
-```php
-    /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
-     */
+```phh
+   use SingleQuote\LaravelApiResource\Service\ApiPolicyService;
+
     public function toArray(Request $request): array
     {
         return [
