@@ -3,6 +3,7 @@ namespace SingleQuote\LaravelApiResource\Traits;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Request;
 use ReflectionClass;
 use function collect;
 use function str;
@@ -31,10 +32,10 @@ trait HasApi
     }
 
     /**
-     * @param FormRequest $request
+     * @param FormRequest|Request $request
      * @return self
      */
-    public function modelDefaults(FormRequest $request): self
+    public function modelDefaults(FormRequest|Request $request): self
     {
         if (!$this->exists) {
             return $this;
@@ -136,12 +137,16 @@ trait HasApi
     }
 
     /**
-     * @param FormRequest $request
+     * @param FormRequest|Request $request
      * @return array
      */
-    private function getRelationWith(FormRequest $request): array
+    private function getRelationWith(FormRequest|Request $request): array
     {
-        return $request->validated('with', []);
+        if($request instanceof FormRequest){
+            return $request->validated('with', []);
+        }
+        
+        return $request->get('with', []);
     }
 
     /**
