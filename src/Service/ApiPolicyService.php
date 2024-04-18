@@ -10,8 +10,19 @@ use function auth;
 
 final class ApiPolicyService
 {
-    public static function defaults(Model $model): array
+    /**
+     * @param Model $model
+     * @param array $addition
+     * @return array
+     */
+    public static function defaults(Model $model, array $addition = []): array
     {
+        $keys = collect($addition)->flatMap(function(string $abbility) use($model){
+            return [
+                $abbility => auth()->user()->can($abbility, $model),
+            ];
+        })->toArray();
+
         return [
             'viewAny' => auth()->user()->can('viewAny', $model::class),
             'view' => auth()->user()->can('view', $model),
@@ -20,6 +31,7 @@ final class ApiPolicyService
             'delete' => auth()->user()->can('delete', $model),
             'restore' => auth()->user()->can('restore', $model),
             'forceDelete' => auth()->user()->can('forceDelete', $model),
+            ... $keys,
         ];
     }
 }
