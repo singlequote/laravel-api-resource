@@ -57,7 +57,28 @@ After the generation is completed you can add your api resource route to your `a
  */
 Route::apiResource('users', UserController::class)->only('index', 'store', 'show', 'update', 'destroy');
 ```
+## Resource methods
+The package comes with default methods that can be used to quickly setup your api. For instance the policy service can be used to add policies to your resource response.
+```php
+    /**
+     * Transform the resource into an array.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        return [
+            // ...
+            'policies' => ApiPolicyService::defaults($this->resource),
+        ];
+    }
+```
 
+In addition you can pass additional policy methods as a second parameter.
+
+```php
+'policies' => ApiPolicyService::defaults($this->resource, ['sendInvite', 'acceptInvite']),
+```
 
 ## Api methods
 The package comes with default api options. To use the provided helpers, add the `HasApi` trait to your models. 
