@@ -12,17 +12,12 @@ return [
     ],
 
     'exclude' => [
-        'resources' => [
-            'base_company_id',
-        ],
-        'requests' => [
-            'base_company_id',
-            'slug',
-        ],
+        'resources' => [],
+        'requests' => [],
     ],
 
     'api' => [
-        'limit' => 10,
+        'limit' => 1000,
     ],
 
 ];
