@@ -17,7 +17,7 @@ final class ApiPolicyService
      */
     public static function defaults(Model $model, array $addition = []): array
     {
-        $keys = collect($addition)->flatMap(function(string $abbility) use($model){
+        $keys = collect($addition)->flatMap(function (string $abbility) use ($model) {
             return [
                 $abbility => auth()->user()->can($abbility, $model),
             ];
