@@ -25,7 +25,11 @@ class LaravelApiResourceServiceProvider extends ServiceProvider
     {
         $this->publishes([
             __DIR__.'/config/config.php' => config_path('laravel-api-resource.php'),
-        ], 'laravel-api-resource');
+        ], 'laravel-api-resource-config');
+
+        $this->publishes([
+            __DIR__.'/Template' => base_path('stubs/ApiResource')
+        ], 'laravel-api-resource-stubs');
     }
 
     /**

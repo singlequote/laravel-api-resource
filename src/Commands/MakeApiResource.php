@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use SingleQuote\LaravelApiResource\Generator\StubGenerator;
 use SingleQuote\LaravelApiResource\Service\ApiRequestService;
 use SingleQuote\LaravelApiResource\Traits\HasApi;
 use Symfony\Component\Finder\SplFileInfo;
@@ -37,6 +38,13 @@ class MakeApiResource extends Command
      * @var object
      */
     private object $config;
+
+
+    public function __construct(
+        protected StubGenerator $stubGenerator
+    ) {
+        parent::__construct();
+    }
 
     /**
      * @return int
@@ -138,7 +146,7 @@ class MakeApiResource extends Command
             File::makeDirectory($newPath);
         }
 
-        File::copy(__DIR__ . '/../Template/Http/Controllers/ApiTemplateController.stub', "$newPath/Api{$this->config->modelName}Controller.php");
+        File::copy($this->stubGenerator->getFilePath("Http/Controllers/ApiTemplateController"), "$newPath/Api{$this->config->modelName}Controller.php");
 
         $content = File::get("$newPath/Api{$this->config->modelName}Controller.php");
 
@@ -163,7 +171,7 @@ class MakeApiResource extends Command
 
         $this->deleteDirectory($newPath);
 
-        File::copyDirectory(__DIR__ . '/../Template/Actions/Templates', $newPath);
+        $this->stubGenerator->copyDirectory('Actions/Templates', $newPath);
 
         foreach (File::files($newPath) as $file) {
 
@@ -199,7 +207,7 @@ class MakeApiResource extends Command
 
         $this->deleteDirectory($newPath);
 
-        File::copyDirectory(__DIR__ . '/../Template/Http/Requests/Templates', $newPath);
+        $this->stubGenerator->copyDirectory('Http/Requests/Templates', $newPath);
 
         foreach (File::files($newPath) as $file) {
             $content = $file->getContents();
@@ -240,7 +248,7 @@ class MakeApiResource extends Command
             File::makeDirectory($newPath);
         }
 
-        File::copy(__DIR__ . '/../Template/Http/Resources/TemplateResource.stub', "$newPath/{$this->config->modelName}Resource.php");
+        File::copy($this->stubGenerator->getFilePath("Http/Resources/TemplateResource"), "$newPath/{$this->config->modelName}Resource.php");
 
         $content = File::get("$newPath/{$this->config->modelName}Resource.php");
 
