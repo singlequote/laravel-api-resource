@@ -12,6 +12,16 @@ This package contains a wide array of standard options for your API resources. A
 composer require singlequote/laravel-api-resource
 ```
 
+## Publish files
+Publish the config
+```bash
+php artisan vendor:publish --tag=laravel-api-resource-config
+```
+Publish stub files
+```bash
+php artisan vendor:publish --tag=laravel-api-resource-stubs
+```
+
 ## API Resource Generation
 
 ```bash
