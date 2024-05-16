@@ -322,9 +322,10 @@ class MakeApiResource extends Command
     }
 
     /**
+     * @param string $requiredLabel
      * @return string
      */
-    private function getFillablesForRequest(): string
+    private function getFillablesForRequest(string $requiredLabel = 'required'): string
     {
         $fillables = ApiRequestService::getFillable($this->config->modelPath);
 
@@ -341,7 +342,7 @@ class MakeApiResource extends Command
 
             $content = $content->append(
                 "
-            '$fillable' => [{$this->columnRequired($pdoColumn)}, {$this->getColumnAttributes($fillable, $pdoColumn)}],\r"
+            '$fillable' => [{$this->columnRequired($pdoColumn, $requiredLabel)}, {$this->getColumnAttributes($fillable, $pdoColumn)}],\r"
             );
         }
 
@@ -366,15 +367,16 @@ class MakeApiResource extends Command
 
     /**
      * @param array $pdoColumn
+     * @param string $requiredLabel
      * @return string
      */
-    private function columnRequired(array $pdoColumn): string
+    private function columnRequired(array $pdoColumn, string $requiredLabel = 'required'): string
     {
         if (isset($pdoColumn['nullable']) && $pdoColumn['nullable']) {
             return "'nullable'";
         }
 
-        return "'required'";
+        return "'$requiredLabel'";
     }
 
     /**
