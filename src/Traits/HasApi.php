@@ -26,6 +26,7 @@ trait HasApi
                 ->parseOrderByDesc($request->validated('orderByDesc'))
                 ->parseSelect($request->validated('select'))
                 ->parseWhere($request->validated('where'))
+                ->parseWhereNotNull($request->validated('whereNotNull'))
                 ->parseWhereIn($request->validated('whereIn'))
                 ->parseWhereNotIn($request->validated('whereNotIn'))
                 ->parseHas($request->validated('has'))
@@ -199,6 +200,29 @@ trait HasApi
             } else {
                 $builder->where($key, $scope);
             }
+        }
+
+        return $builder;
+    }
+
+    /**
+     * @param Builder $builder
+     * @param array|null $scopes
+     * @return Builder
+     */
+    public function scopeParseWhereNotNull(Builder $builder, ?array $scopes = []): Builder
+    {
+        foreach ($scopes ?? [] as $column => $scope) {
+
+            $key = str($column)
+                ->replace('.', '->')
+                ->value();
+
+            if (!in_array(str($key)->before('->')->value(), $this->getFillable())) {
+                continue;
+            }
+
+            $builder->whereNotNull($key, $scope);
         }
 
         return $builder;
