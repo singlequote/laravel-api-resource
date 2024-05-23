@@ -1,18 +1,17 @@
 <?php
-
 namespace SingleQuote\LaravelApiResource\Traits;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
 use ReflectionClass;
-
 use function collect;
 use function str;
 use function str_contains;
 
 trait HasApi
 {
+
     /**
      * @param Builder $builder
      * @param FormRequest $request
@@ -59,10 +58,10 @@ trait HasApi
 
         return $builder->where(function (Builder $builder) use ($searchable) {
 
-            $this->applySearch($builder, $searchable);
+                $this->applySearch($builder, $searchable);
 
-            return $builder;
-        });
+                return $builder;
+            });
     }
 
     /**
@@ -106,8 +105,8 @@ trait HasApi
     private function searchRelation(Builder $builder, string $relation, string $column, string $search): Builder
     {
         return $builder->orWhereHas($relation, function (Builder $builder) use ($column, $search) {
-            $builder->whereRaw("LOWER($column) LIKE ?", ["%{$search}%"]);
-        });
+                $builder->whereRaw("LOWER($column) LIKE ?", ["%{$search}%"]);
+            });
     }
 
     /**
@@ -144,7 +143,7 @@ trait HasApi
      */
     private function getRelationWith(FormRequest|Request $request): array
     {
-        if($request instanceof FormRequest) {
+        if ($request instanceof FormRequest) {
             return $request->validated('with', []);
         }
 
@@ -210,19 +209,14 @@ trait HasApi
      * @param array|null $scopes
      * @return Builder
      */
-    public function scopeParseWhereNotNull(Builder $builder, ?array $scopes = []): Builder
+    public function scopeParseWhereNotNull(Builder $builder, ?string $scope = null): Builder
     {
-        foreach ($scopes ?? [] as $column => $scope) {
+        if ($scope) {
+            $key = str($scope)->replace('.', '->')->value();
 
-            $key = str($column)
-                ->replace('.', '->')
-                ->value();
-
-            if (!in_array(str($key)->before('->')->value(), $this->getFillable())) {
-                continue;
+            if (in_array(str($key)->before('->')->value(), $this->getFillable())) {
+                $builder->whereNotNull($scope);
             }
-
-            $builder->whereNotNull($key, $scope);
         }
 
         return $builder;
