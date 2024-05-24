@@ -1,17 +1,18 @@
 <?php
+
 namespace SingleQuote\LaravelApiResource\Traits;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
 use ReflectionClass;
+
 use function collect;
 use function str;
 use function str_contains;
 
 trait HasApi
 {
-
     /**
      * @param Builder $builder
      * @param FormRequest $request
@@ -58,10 +59,10 @@ trait HasApi
 
         return $builder->where(function (Builder $builder) use ($searchable) {
 
-                $this->applySearch($builder, $searchable);
+            $this->applySearch($builder, $searchable);
 
-                return $builder;
-            });
+            return $builder;
+        });
     }
 
     /**
@@ -105,8 +106,8 @@ trait HasApi
     private function searchRelation(Builder $builder, string $relation, string $column, string $search): Builder
     {
         return $builder->orWhereHas($relation, function (Builder $builder) use ($column, $search) {
-                $builder->whereRaw("LOWER($column) LIKE ?", ["%{$search}%"]);
-            });
+            $builder->whereRaw("LOWER($column) LIKE ?", ["%{$search}%"]);
+        });
     }
 
     /**

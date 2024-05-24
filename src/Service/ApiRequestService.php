@@ -1,9 +1,9 @@
 <?php
+
 namespace SingleQuote\LaravelApiResource\Service;
 
 class ApiRequestService
 {
-
     /**
      * @param string $model
      * @return array
@@ -91,7 +91,7 @@ class ApiRequestService
         $hidden = (new $model())->getHidden();
 
         return collect($fillables)->filter(function ($fill) use ($hidden) {
-                return !in_array($fill, $hidden);
-            })->implode(',');
+            return !in_array($fill, $hidden);
+        })->implode(',');
     }
 }
