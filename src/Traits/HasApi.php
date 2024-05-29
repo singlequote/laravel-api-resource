@@ -187,6 +187,9 @@ trait HasApi
     {
         foreach ($scopes ?? [] as $column => $scope) {
 
+            $operator = is_array($scope) ? $this->parseOperator(array_key_first($scope)) : '=';
+            $value = is_array($scope) ? $scope[array_key_first($scope)] : $scope;
+
             $key = str($column)
                 ->replace('.', '->')
                 ->value();
@@ -198,16 +201,36 @@ trait HasApi
             if ($scope === 'null') {
                 $builder->whereNull($key);
             } else {
-                $builder->where($key, $scope);
+                $builder->where($key, $operator, $value);
             }
         }
 
-        return $builder;
+        return dd($builder->toRawSql());
+    }
+
+    /**
+     * @param string $operator
+     * @return string
+     */
+    private function parseOperator(string $operator): string
+    {
+        switch($operator) {
+            case 'gt':
+                return '>';
+            case 'gte':
+                return '>=';
+            case 'lt':
+                return '<';
+            case 'lte':
+                return '<=';
+            default:
+                return '=';
+        }
     }
 
     /**
      * @param Builder $builder
-     * @param array|null $scopes
+     * @param string|null $scope
      * @return Builder
      */
     public function scopeParseWhereNotNull(Builder $builder, ?string $scope = null): Builder

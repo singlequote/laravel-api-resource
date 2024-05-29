@@ -2,6 +2,10 @@
 
 namespace SingleQuote\LaravelApiResource\Service;
 
+use SingleQuote\LaravelApiResource\Rules\MixedRule;
+
+use function collect;
+
 class ApiRequestService
 {
     /**
@@ -13,33 +17,43 @@ class ApiRequestService
         return [
             // Set limit per page
             'limit' => 'nullable|int|max:10000|min:1',
+
             // Search on results
             'search' => 'nullable|array',
             'search.fields' => 'nullable|array',
             'search.query' => 'nullable|string|min:2|max:191',
+
             // Set where
             'where' => 'nullable|array',
-            'where.*' => 'required|string',
+            'where.*' => ['required', new MixedRule()],
+
             // Set whereIn
             'whereIn' => 'nullable|array',
             'whereIn.*' => 'required|array',
+
             // Set whereNotIn
             'whereNotIn' => 'nullable|array',
             'whereNotIn.*' => 'required|array',
+
             // Set whereNotNull
             'whereNotNull' => 'nullable|string',
+
             // Set WhereHas
             'has' => 'nullable|array',
             'has.*' => 'required|string|in:' . self::getRelations($model),
+
             // Set Where Relation
             'whereRelation' => 'nullable|array',
             'whereRelation.*' => 'required|array',
+
             // Set With relations
             'with' => 'nullable|array',
             'with.*' => 'required|string|in:' . self::getRelations($model),
+
             // Set select on columns
             'select' => 'nullable|array',
             'select.*' => 'required|string|in:' . self::getFillable($model),
+
             // Set the order
             'orderBy' => 'nullable|string|in:updated_at,created_at,' . self::getFillable($model),
             'orderByDesc' => 'nullable|string|in:updated_at,created_at,' . self::getFillable($model),
