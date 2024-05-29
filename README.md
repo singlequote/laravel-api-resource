@@ -95,9 +95,11 @@ The package comes with default api options. To use the provided helpers, add the
 | limit | number |
 | search| array |
 | where| array |
+| orWhere| array |
 | whereIn | array |
 | whereNotIn | array |
-| whereHas | array |
+| whereNotNull | string |
+| has | array |
 | whereRelation | array |
 | with | array |
 | select | array |
@@ -126,11 +128,22 @@ axios.get(route('api.users.index', {
 You may use the query builder's `where` method to add "where" clauses to the query. The most basic call to the `where` method requires 2 arguments. The first argument is the name of the column. The second argument is the value to compare against the column's value.
 ```javascript
 axios.get(route('api.users.index', {
-	where: {
+     where: {
         first_name: "john"
     }
 }))
 ```
+You may also pass an additional operator to retrieve data for example, get all users younger than a certain date
+```javascript
+axios.get(route('api.users.index', {
+     where: {
+        date_of_birth: {
+           "gt" : "1995-01-31"
+        } 
+    }
+}))
+```
+
 **whereIn**
 The `whereIn` method verifies that a given column's value is contained within the given array:
 ```javascript
@@ -149,6 +162,13 @@ axios.get(route('api.users.index', {
     }
 }))
 ```
+**whereNotNull**
+The `whereNotNull` method verifies that the given column's value is not `NULL`
+```javascript
+axios.get(route('api.users.index', {
+	whereNotNull: "password"
+}))
+```
 **has**
 When retrieving model records, you may wish to limit your results based on the existence of a relationship. For example, imagine you want to retrieve all users that have at least one role.
 ```javascript
@@ -161,10 +181,10 @@ If you would like to query for a relationship's existence with a single, simple 
 ```javascript
 axios.get(route('api.users.index', {
 	whereRelation:  {
-		roles: {
-            name: 'admin'
+            roles: {
+                name: 'admin'
+            }
         }
-	}
 }))
 ```
 **with**
