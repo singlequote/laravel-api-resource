@@ -26,6 +26,7 @@ trait HasApi
                 ->parseOrderByDesc($request->validated('orderByDesc'))
                 ->parseSelect($request->validated('select'))
                 ->parseWhere($request->validated('where'))
+                ->parseOrWhere($request->validated('orWhere'))
                 ->parseWhereNotNull($request->validated('whereNotNull'))
                 ->parseWhereIn($request->validated('whereIn'))
                 ->parseWhereNotIn($request->validated('whereNotIn'))
@@ -183,7 +184,18 @@ trait HasApi
      * @param array|null $scopes
      * @return Builder
      */
-    public function scopeParseWhere(Builder $builder, ?array $scopes = []): Builder
+    public function scopeParseOrWhere(Builder $builder, ?array $scopes = []): Builder
+    {
+        return $this->scopeParseWhere($builder, $scopes, 'or');
+    }
+
+    /**
+     * @param Builder $builder
+     * @param array|null $scopes
+     * @param string $boolean
+     * @return Builder
+     */
+    public function scopeParseWhere(Builder $builder, ?array $scopes = [], string $boolean = 'and'): Builder
     {
         foreach ($scopes ?? [] as $column => $scope) {
 
@@ -201,11 +213,11 @@ trait HasApi
             if ($scope === 'null') {
                 $builder->whereNull($key);
             } else {
-                $builder->where($key, $operator, $value);
+                $builder->where($key, $operator, $value, $boolean);
             }
         }
 
-        return dd($builder->toRawSql());
+        return $builder;
     }
 
     /**
