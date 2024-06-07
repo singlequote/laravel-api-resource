@@ -149,7 +149,7 @@ You may also pass an additional operator to retrieve data for example, get all u
 axios.get(route('api.users.index', {
      where: {
         date_of_birth: {
-           "gt" : "1995-01-31"
+           gt: "1995-01-31"
         } 
     }
 }))
@@ -193,11 +193,27 @@ If you would like to query for a relationship's existence with a single, simple 
 axios.get(route('api.users.index', {
 	whereRelation:  {
             roles: {
-                name: 'admin'
+                name: 'admin',
             }
         }
 }))
 ```
+
+You may also pass an additional operator to retrieve data for example, get all users where the role was created after a certain date.
+```javascript
+axios.get(route('api.users.index', {
+    whereRelation:  {
+        roles: {
+            created_at: {
+                gt: "2024-01-01",
+            },
+        }
+    }
+}))
+```
+
+
+
 **with**
 Sometimes you may need to eager load several different relationships. To do so, just pass an array of relationships to the `with` method
 ```javascript
