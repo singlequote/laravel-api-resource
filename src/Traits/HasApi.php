@@ -325,9 +325,29 @@ trait HasApi
      */
     public function scopeParseWhereRelation(Builder $builder, ?array $scopes = []): Builder
     {
-        foreach ($scopes ?? [] as $key => $scope) {
-            if (is_array($scope) && in_array($key, $this->definedRelations())) {
-                $builder->whereRelation($key, array_key_first($scope), $scope[array_key_first($scope)]);
+        foreach ($scopes ?? [] as $relation => $scope) {
+
+            if (is_array($scope) && in_array($relation, $this->definedRelations())) {
+                foreach ($scope as $column => $scopeValue) {
+                    $operator = is_array($scopeValue) ? $this->parseOperator(array_key_first($scopeValue)) : '=';
+                    $value = is_array($scopeValue) ? $scopeValue[array_key_first($scopeValue)] : $scopeValue;
+
+                    $key = str($column)
+                        ->replace('.', '->')
+                        ->value();
+
+                    if ($operator !== '=' && $value === null) {
+                        continue;
+                    }
+
+                    if ($value === null) {
+                        $builder->whereRelation($relation, $key, $value);
+                    }
+
+                    if ($value !== null) {
+                        $builder->whereRelation($relation, $key, $operator, $value);
+                    }
+                }
             }
         }
 

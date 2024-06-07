@@ -45,6 +45,7 @@ class ApiRequestService
             // Set Where Relation
             'whereRelation' => 'nullable|array',
             'whereRelation.*' => 'required|array',
+            'whereRelation.*.*' => ['required', new MixedRule()],
 
             // Set With relations
             'with' => 'nullable|array',
