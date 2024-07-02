@@ -73,52 +73,36 @@ class ApiRequestService
     }
 
     /**
-     * @param string $model
-     * @param string $prefix
-     * @param int $depth
+     * @param string $modelClass
      * @return string
      */
-    public static function getRelations(string $model, string $prefix = '', int $depth = 1): string
+    public static function getRelations(string $modelClass): string
     {
-        if (!class_exists($model) || $depth > config('laravel-api-resource.api.relations.depth', 1)) {
-            return '';
-        }
-        
         try{
-            $relations = (new $model())->definedRelations();
+            $model = (new $modelClass);
+            $relations = $model->definedRelations();
         } catch (Throwable $ex) {
             return '';
         }
         
-        $additionalRelations = [];
+        $additionalRelations = $model->apiRelations ?? [];
         
         foreach($relations as $relation){
-            
+
             $additionalRelations[] = $relation;
-            
-            try{
-                $relationModel = (new $model())->$relation()->getModel();
-            } catch (Throwable $ex) {
-                continue;
-            }
+            $relationModel = $model->$relation()->getModel();
             
             if(isset($relationModel->apiRelations)){
                 $additionalRelations = [
                     ... $additionalRelations,
                     ... collect($relationModel->apiRelations)->map(fn($r) => "$relation.$r")->toArray()
                 ];
-            }
-            
-            $depthRelations = self::getRelations($relationModel::class, "$relation.", $depth + 1);
-            
-            if($depthRelations !== $prefix && $depthRelations !== ''){
-                $relations[$relation] = $depthRelations;
-            }            
+            }      
         }
-        
+                
         $apiIncluded = array_merge($relations, $additionalRelations);
 
-        return collect($apiIncluded)->map(fn($i) => "{$prefix}{$i}")->unique()->sortDesc()->implode(',');
+        return collect($apiIncluded)->unique()->implode(',');
     }
 
     /**
