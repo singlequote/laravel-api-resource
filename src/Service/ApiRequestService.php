@@ -3,8 +3,9 @@
 namespace SingleQuote\LaravelApiResource\Service;
 
 use SingleQuote\LaravelApiResource\Rules\MixedRule;
-
+use Throwable;
 use function collect;
+use function config;
 
 class ApiRequestService
 {
@@ -85,22 +86,39 @@ class ApiRequestService
         
         try{
             $relations = (new $model())->definedRelations();
-        } catch (\Throwable $ex) {
+        } catch (Throwable $ex) {
             return '';
         }
         
+        $additionalRelations = [];
+        
         foreach($relations as $relation){
             
-            $depthRelations = self::getRelations((new $model())->$relation()->getModel()::class, "$relation.", $depth + 1);
+            $additionalRelations[] = $relation;
+            
+            try{
+                $relationModel = (new $model())->$relation()->getModel();
+            } catch (Throwable $ex) {
+                continue;
+            }
+            
+            if(isset($relationModel->apiRelations)){
+                $additionalRelations = [
+                    ... $additionalRelations,
+                    ... collect($relationModel->apiRelations)->map(fn($r) => "$relation.$r")->toArray()
+                ];
+            }
+            
+            $depthRelations = self::getRelations($relationModel::class, "$relation.", $depth + 1);
             
             if($depthRelations !== $prefix && $depthRelations !== ''){
                 $relations[$relation] = $depthRelations;
             }            
         }
         
-        $apiIncluded = array_merge($relations, isset((new $model())->apiRelations2) ? (new $model())->apiRelations : []);
+        $apiIncluded = array_merge($relations, $additionalRelations);
 
-        return collect($apiIncluded)->map(fn($i) => "{$prefix}{$i}")->implode(',');
+        return collect($apiIncluded)->map(fn($i) => "{$prefix}{$i}")->unique()->sortDesc()->implode(',');
     }
 
     /**
