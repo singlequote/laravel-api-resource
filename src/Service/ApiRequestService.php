@@ -16,7 +16,7 @@ class ApiRequestService
     {
         return [
             // Set limit per page
-            'limit' => 'nullable|int|max:10000|min:1',
+            'limit' => 'nullable|int|max:'.config('laravel-api-resource.api.limit', 1000).'|min:1',
 
             // Search on results
             'search' => 'nullable|array',
@@ -73,19 +73,34 @@ class ApiRequestService
 
     /**
      * @param string $model
+     * @param string $prefix
+     * @param int $depth
      * @return string
      */
-    public static function getRelations(string $model): string
+    public static function getRelations(string $model, string $prefix = '', int $depth = 1): string
     {
-        if (!class_exists($model)) {
+        if (!class_exists($model) || $depth > config('laravel-api-resource.api.relations.depth', 1)) {
             return '';
         }
+        
+        try{
+            $relations = (new $model())->definedRelations();
+        } catch (\Throwable $ex) {
+            return '';
+        }
+        
+        foreach($relations as $relation){
+            
+            $depthRelations = self::getRelations((new $model())->$relation()->getModel()::class, "$relation.", $depth + 1);
+            
+            if($depthRelations !== $prefix && $depthRelations !== ''){
+                $relations[$relation] = $depthRelations;
+            }            
+        }
+        
+        $apiIncluded = array_merge($relations, isset((new $model())->apiRelations2) ? (new $model())->apiRelations : []);
 
-        $relations = (new $model())->definedRelations();
-
-        $apiIncluded = array_merge($relations, isset((new $model())->apiRelations) ? (new $model())->apiRelations : []);
-
-        return collect($apiIncluded)->implode(',');
+        return collect($apiIncluded)->map(fn($i) => "{$prefix}{$i}")->implode(',');
     }
 
     /**
