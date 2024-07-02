@@ -222,14 +222,7 @@ axios.get(route('api.users.index', {
 }))
 ```
 **Using `with` with depth**
-When you want to retrieve a relation containing other relations you have 2 available options;
-For example if you want to retrieve the users roles including the permissions you would get something like this: `with: users.roles.permissions`
-To allow this you can simply edit the config file and change the `api.relations.depth` level.
-```php
-...
-'depth' => 2, //allows for users.roles.permisions
-``` 
-You can also set a property on each model. This allows you to allow certain models to accept multiple depths
+When you want to retrieve a relation containing other relations you can set a property on each model. This allows you to allow certain models to accept multiple depths
 Add the property `$apiRelations` to your model.
 
 ```php
@@ -239,11 +232,7 @@ class User extends Authenticatable
     public array $apiRelations = [
         'roles.permissions', //allows for users.roles.permissions
     ];
-``` 
-
-
-
-
+```
 
 **select**
 Sometimes you may only need a few columns from the resource and keep your api responses small.
