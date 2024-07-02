@@ -37,17 +37,6 @@ return [
         | Maximum results per page the api can return
        */
         'limit' => 1000,
-        
-        'relations' => [
-            /*
-            |--------------------------------------------------------------------------
-            | Relation depth
-            |--------------------------------------------------------------------------
-            | This determines how many relationships the API can use. For example, a depth of 2 can read the relationships of a relationship.
-            | a depth of 2 can read the relationships of a relationship.
-           */
-            'depth' => 1,
-        ]
     ],
 
 ];
