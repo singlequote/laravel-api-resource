@@ -1,7 +1,10 @@
 
-# Laravel API Resource Generator
+# Laravel API Resources made simple
 
-This package contains a wide array of standard options for your API resources. Additionally, it generates a complete API resource based on your model. The package follows the default laravel folder/file structures. 
+The laravel-api-resource package simplifies the process of working with JSON
+responses in Laravel applications. It provides a straightforward way to create consistent and standardized API resources, leveraging Laravel’s built-in resource classes while adhering to JSON
+specifications. This package helps developers efficiently manage resource transformations, handle relationships, and customize resource attributes, ensuring a clean and maintainable API development workflow. Whether you're building a new API or maintaining an existing one, laravel-api-resource enhances your ability to deliver robust and compliant JSON
+responses with minimal effort. 
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/singlequote/laravel-api-resource.svg?style=flat-square)](https://packagist.org/packages/singlequote/laravel-api-resource)
 [![Total Downloads](https://img.shields.io/packagist/dt/singlequote/laravel-api-resource.svg?style=flat-square)](https://packagist.org/packages/singlequote/laravel-api-resource)
