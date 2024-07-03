@@ -89,7 +89,7 @@ In addition you can pass additional policy methods as a second parameter.
 
 ## Api methods
 The package comes with default api options. To use the provided helpers, add the `HasApi` trait to your models. 
-In the code previews below we use a package to parse the url. If you don't use any javascript libraries to build your url you have to manual build the url according to the previews below.
+In the code previews below we use a package named [Ziggy](https://github.com/tighten/ziggy) to parse the url. If you don't use any javascript libraries to build your url you have to manual build the url according to the previews below.
 For example: 
 ```javascript
 axios.get(route('api.users.index', {
