@@ -287,7 +287,7 @@ class MakeApiResource extends Command
      */
     private function getRelationsForResource(): string
     {
-        $relations = ApiRequestService::getRelations($this->config->modelPath);
+        $relations = ApiRequestService::getRelations($this->config->modelPath, false);
 
         $content = str('');
 
@@ -340,6 +340,11 @@ class MakeApiResource extends Command
 
             $pdoColumn = $pdoColumns->firstWhere('name', $fillable);
 
+            if($pdoColumn === null){
+                $this->error("Column $fillable does not exists within your database scheme.");
+                continue;
+            }
+
             $content = $content->append(
                 "
             '$fillable' => [{$this->columnRequired($pdoColumn, $requiredLabel)}, {$this->getColumnAttributes($fillable, $pdoColumn)}],\r"
@@ -366,11 +371,11 @@ class MakeApiResource extends Command
     }
 
     /**
-     * @param array $pdoColumn
+     * @param array|null $pdoColumn
      * @param string $requiredLabel
      * @return string
      */
-    private function columnRequired(array $pdoColumn, string $requiredLabel = 'required'): string
+    private function columnRequired(?array $pdoColumn = null, string $requiredLabel = 'required'): string
     {
         if (isset($pdoColumn['nullable']) && $pdoColumn['nullable']) {
             return "'nullable'";
@@ -381,11 +386,12 @@ class MakeApiResource extends Command
 
     /**
      * @param string $column
+     * @param array|null $pdoColumn
      * @return string
      */
-    private function getColumnAttributes(string $column, array $pdoColumn): string
+    private function getColumnAttributes(string $column, ?array $pdoColumn = null): string
     {
-        $relations = ApiRequestService::getRelations($this->config->modelPath);
+        $relations = ApiRequestService::getRelations($this->config->modelPath, false);
 
         foreach (explode(',', $relations) as $relation) {
             $object = $this->config->model->$relation();
