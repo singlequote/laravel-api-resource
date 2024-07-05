@@ -31,6 +31,7 @@ trait HasApi
                 ->parseWhereIn($request->validated('whereIn'))
                 ->parseWhereNotIn($request->validated('whereNotIn'))
                 ->parseHas($request->validated('has'))
+                ->parseDoesntHave($request->validated('doesntHave'))
                 ->parseWhereRelation($request->validated('whereRelation'));
     }
 
@@ -313,6 +314,20 @@ trait HasApi
     {
         foreach ($scopes ?? [] as $scope) {
             $builder->has($scope);
+        }
+
+        return $builder;
+    }
+
+    /**
+     * @param Builder $builder
+     * @param array|null $scopes
+     * @return Builder
+     */
+    public function scopeParseDoesntHave(Builder $builder, ?array $scopes = []): Builder
+    {
+        foreach ($scopes ?? [] as $scope) {
+            $builder->doesntHave($scope);
         }
 
         return $builder;
