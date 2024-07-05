@@ -68,7 +68,7 @@ class ApiRequestService
      * @param string $modelClass
      * @return string
      */
-    public static function getRelations(string $modelClass): string
+    public static function getRelations(string $modelClass, bool $withSubRelations = true): string
     {
         try {
             $model     = (new $modelClass);
@@ -80,6 +80,10 @@ class ApiRequestService
         $additionalRelations = $model->apiRelations ?? [];
 
         foreach ($relations as $relation) {
+
+            if(! $withSubRelations){
+                continue;
+            }
 
             $additionalRelations[] = $relation;
 
