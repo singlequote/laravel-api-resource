@@ -77,7 +77,7 @@ class ApiRequestService
             return '';
         }
 
-        $additionalRelations = $model->apiRelations ?? [];
+        $additionalRelations = $withSubRelations ? ($model->apiRelations ?? []) : [];
 
         foreach ($relations as $relation) {
 
