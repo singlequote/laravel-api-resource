@@ -18,8 +18,7 @@ class ApiRequestService
     {
         return [
             // Set limit per page
-            'limit' => 'nullable|int|max:'.config('laravel-api-resource.api.limit',
-                1000).'|min:1',
+            'limit' => 'nullable|int|max:'.config('laravel-api-resource.api.limit', 1000).'|min:1',
             // Search on results
             'search' => 'nullable|array',
             'search.fields' => 'nullable|array',
@@ -35,9 +34,12 @@ class ApiRequestService
             'whereNotIn.*' => 'required|array',
             // Set whereNotNull
             'whereNotNull' => 'nullable|string',
-            // Set WhereHas
+            // Set Has
             'has' => 'nullable|array',
             'has.*' => 'required|string|in:'.self::getRelations($model),
+            // Set doesntHave
+            'doesntHave' => 'nullable|array',
+            'doesntHave.*' => 'required|string|in:'.self::getRelations($model),
             // Set Where Relation
             'whereRelation' => 'nullable|array',
             'whereRelation.*' => 'required|array',
