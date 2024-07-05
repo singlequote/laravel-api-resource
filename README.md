@@ -114,6 +114,7 @@ GET: <your_site_url>/api/users?limit=100
 | whereNotIn | array |
 | whereNotNull | string |
 | has | array |
+| doesntHave | array |
 | whereRelation | array |
 | with | array |
 | select | array |
@@ -124,7 +125,7 @@ GET: <your_site_url>/api/users?limit=100
 The default limit provided by the package is set to `1000` results per page. You can change the default in the `laravel-api-resource` config file. To change the limit for a single request you can use the `limit` helper.
 ```javascript
 axios.get(route('api.users.index', {
-	limit : 100
+    limit : 100
 }))
 ```
 
@@ -180,25 +181,32 @@ axios.get(route('api.users.index', {
 The `whereNotNull` method verifies that the given column's value is not `NULL`
 ```javascript
 axios.get(route('api.users.index', {
-	whereNotNull: "password"
+    whereNotNull: "password"
 }))
 ```
 **has**
 When retrieving model records, you may wish to limit your results based on the existence of a relationship. For example, imagine you want to retrieve all users that have at least one role.
 ```javascript
 axios.get(route('api.users.index', {
-	has:  ['roles']
+    has:  ['roles']
+}))
+```
+**doesntHave**
+When retrieving model records, you may wish to limit your results based on the existence of a relationship. For example, imagine you want to retrieve all users don't have any roles attached.
+```javascript
+axios.get(route('api.users.index', {
+    doesntHave:  ['roles']
 }))
 ```
 **whereRelation**
 If you would like to query for a relationship's existence with a single, simple where condition attached to the relationship query.
 ```javascript
 axios.get(route('api.users.index', {
-	whereRelation:  {
-            roles: {
-                name: 'admin',
-            }
+    whereRelation:  {
+        roles: {
+            name: 'admin',
         }
+    }
 }))
 ```
 
@@ -221,7 +229,7 @@ axios.get(route('api.users.index', {
 Sometimes you may need to eager load several different relationships. To do so, just pass an array of relationships to the `with` method
 ```javascript
 axios.get(route('api.users.index', {
-	with: ['roles']
+    with: ['roles']
 }))
 ```
 **Using `with` with depth**
@@ -241,14 +249,14 @@ class User extends Authenticatable
 Sometimes you may only need a few columns from the resource and keep your api responses small.
 ```javascript
 axios.get(route('api.users.index', {
-	select: ['id', 'name']
+    select: ['id', 'name']
 }))
 ```
 **orderBy/orderByDesc**
 Sometimes you may want to change the ordering form your api response. You can use the `orderBy` or `orderByDesc` helper
 ```javascript
 axios.get(route('api.users.index', {
-	orderBy: 'name'
+    orderBy: 'name'
 }))
 ```
 
