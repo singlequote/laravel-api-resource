@@ -134,11 +134,22 @@ A search helper is available if you want to create a search input.  The search f
 ```javascript
 axios.get(route('api.users.index', {
 	search: {
-        fields: "name,email",
+        fields: ['name', 'email'],
         query: "john"
     }
 }))
 ```
+If you want to search all fillable columns within your model you can use the wildcard `*` as your searchfield
+```javascript
+axios.get(route('api.users.index', {
+	search: {
+        fields: ['*'], // search in all fillable columns
+        query: "john"
+    }
+}))
+```
+
+
 **where**
 You may use the query builder's `where` method to add "where" clauses to the query. The most basic call to the `where` method requires 2 arguments. The first argument is the name of the column. The second argument is the value to compare against the column's value.
 ```javascript
