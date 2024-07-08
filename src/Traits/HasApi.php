@@ -74,7 +74,9 @@ trait HasApi
      */
     private function applySearch(Builder &$builder, array $searchable): Builder
     {
-        foreach ($searchable['fields'] ?? [] as $column) {
+        $fields = ($searchable['fields'][0] ?? null) === '*' ? $this->getFillable() : $searchable['fields'];
+
+        foreach ($fields ?? [] as $column) {
 
             if (str($column)->contains('|')) {
                 $builder = $this->searchRelation($builder, str($column)->before('|'), str($column)->after('|'), str($searchable['query'])->lower());
