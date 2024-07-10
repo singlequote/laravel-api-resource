@@ -291,7 +291,7 @@ class MakeApiResource extends Command
 
         $content = str('');
 
-        foreach (explode(',', $relations) as $relation) {
+        foreach (strlen($relations) ? explode(',', $relations) : [] as $relation) {
             if (in_array($relation, config('laravel-api-resource.exclude.resources', []))) {
                 continue;
             }
@@ -537,9 +537,9 @@ class MakeApiResource extends Command
         }
 
         return str($content)
-                        ->betweenFirst('namespace ', ';')
-                        ->append('\\')
-                        ->append($file->getFilename())
-                        ->replace('.php', '');
+            ->betweenFirst('namespace ', ';')
+            ->append('\\')
+            ->append($file->getFilename())
+            ->replace('.php', '');
     }
 }
