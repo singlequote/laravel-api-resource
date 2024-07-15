@@ -4,12 +4,12 @@ namespace SingleQuote\LaravelApiResource\Service;
 
 use SingleQuote\LaravelApiResource\Rules\MixedRule;
 use Throwable;
+
 use function collect;
 use function config;
 
 class ApiRequestService
 {
-
     /**
      * @param string $model
      * @return array
@@ -73,7 +73,7 @@ class ApiRequestService
     public static function getRelations(string $modelClass, bool $withSubRelations = true): string
     {
         try {
-            $model     = (new $modelClass);
+            $model     = (new $modelClass());
             $relations = $model->definedRelations();
         } catch (Throwable $ex) {
             return '';
@@ -83,7 +83,7 @@ class ApiRequestService
 
         foreach ($relations as $relation) {
 
-            if(! $withSubRelations){
+            if(! $withSubRelations) {
                 continue;
             }
 
@@ -99,7 +99,7 @@ class ApiRequestService
             if (isset($relationModel->apiRelations)) {
                 $additionalRelations = [
                     ... $additionalRelations,
-                    ... collect($relationModel->apiRelations)->map(fn($r) => "$relation.$r")->toArray()
+                    ... collect($relationModel->apiRelations)->map(fn ($r) => "$relation.$r")->toArray()
                 ];
             }
         }
@@ -127,7 +127,7 @@ class ApiRequestService
         $hidden = (new $model())->getHidden();
 
         return collect($fillables)->filter(function ($fill) use ($hidden) {
-                return !in_array($fill, $hidden);
-            })->implode(',');
+            return !in_array($fill, $hidden);
+        })->implode(',');
     }
 }

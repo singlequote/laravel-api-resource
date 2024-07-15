@@ -340,7 +340,7 @@ class MakeApiResource extends Command
 
             $pdoColumn = $pdoColumns->firstWhere('name', $fillable);
 
-            if($pdoColumn === null){
+            if($pdoColumn === null) {
                 $this->error("Column $fillable does not exists within your database scheme.");
                 continue;
             }
