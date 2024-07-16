@@ -2,10 +2,9 @@
 
 namespace SingleQuote\LaravelApiResource\Service;
 
+use SingleQuote\LaravelApiResource\Infra\ApiModel;
 use SingleQuote\LaravelApiResource\Rules\MixedRule;
-use Throwable;
 
-use function collect;
 use function config;
 
 class ApiRequestService
@@ -36,23 +35,23 @@ class ApiRequestService
             'whereNotNull' => 'nullable|string',
             // Set Has
             'has' => 'nullable|array',
-            'has.*' => 'required|string|in:'.self::getRelations($model),
+            'has.*' => 'required|string|in:'.ApiModel::getRelations($model),
             // Set doesntHave
             'doesntHave' => 'nullable|array',
-            'doesntHave.*' => 'required|string|in:'.self::getRelations($model),
+            'doesntHave.*' => 'required|string|in:'.ApiModel::getRelations($model),
             // Set Where Relation
             'whereRelation' => 'nullable|array',
             'whereRelation.*' => 'required|array',
             'whereRelation.*.*' => ['required', new MixedRule()],
             // Set With relations
             'with' => 'nullable|array',
-            'with.*' => 'required|string|in:'.self::getRelations($model),
+            'with.*' => 'required|string|in:'.ApiModel::getRelations($model),
             // Set select on columns
             'select' => 'nullable|array',
-            'select.*' => 'required|string|in:'.self::getFillable($model),
+            'select.*' => 'required|string|in:'.ApiModel::getFillable($model),
             // Set the order
-            'orderBy' => 'nullable|string|in:updated_at,created_at,'.self::getFillable($model),
-            'orderByDesc' => 'nullable|string|in:updated_at,created_at,'.self::getFillable($model),
+            'orderBy' => 'nullable|string|in:updated_at,created_at,'.ApiModel::getFillable($model),
+            'orderByDesc' => 'nullable|string|in:updated_at,created_at,'.ApiModel::getFillable($model),
         ];
     }
 
@@ -63,71 +62,7 @@ class ApiRequestService
     public static function attributes(string $model): array
     {
         return [
+
         ];
-    }
-
-    /**
-     * @param string $modelClass
-     * @return string
-     */
-    public static function getRelations(string $modelClass, bool $withSubRelations = true): string
-    {
-        try {
-            $model     = (new $modelClass());
-            $relations = $model->definedRelations();
-        } catch (Throwable $ex) {
-            return '';
-        }
-
-        $additionalRelations = $withSubRelations ? ($model->apiRelations ?? []) : [];
-
-        foreach ($relations as $relation) {
-
-            if(! $withSubRelations) {
-                continue;
-            }
-
-            $additionalRelations[] = $relation;
-
-            try {
-                $relationModel = $model->$relation()->getModel();
-            } catch (\Throwable $ex) {
-                continue;
-            }
-
-
-            if (isset($relationModel->apiRelations)) {
-                $additionalRelations = [
-                    ... $additionalRelations,
-                    ... collect($relationModel->apiRelations)->map(fn ($r) => "$relation.$r")->toArray()
-                ];
-            }
-        }
-
-        $apiIncluded = array_merge($relations, $additionalRelations);
-
-        return collect($apiIncluded)->unique()->implode(',');
-    }
-
-    /**
-     * @param string $model
-     * @return string
-     */
-    public static function getFillable(string $model): string
-    {
-        if (!class_exists($model)) {
-            return '';
-        }
-
-        $fillables = [
-            'id',
-            ...(new $model())->getFillable(),
-        ];
-
-        $hidden = (new $model())->getHidden();
-
-        return collect($fillables)->filter(function ($fill) use ($hidden) {
-            return !in_array($fill, $hidden);
-        })->implode(',');
     }
 }

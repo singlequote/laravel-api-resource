@@ -3,9 +3,18 @@
 namespace SingleQuote\LaravelApiResource\Traits;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
 use ReflectionClass;
+use SingleQuote\LaravelApiResource\Scopes\ScopeDoesntHave;
+use SingleQuote\LaravelApiResource\Scopes\ScopeHas;
+use SingleQuote\LaravelApiResource\Scopes\ScopeOrder;
+use SingleQuote\LaravelApiResource\Scopes\ScopeSearch;
+use SingleQuote\LaravelApiResource\Scopes\ScopeSelect;
+use SingleQuote\LaravelApiResource\Scopes\ScopeWhere;
+use SingleQuote\LaravelApiResource\Scopes\ScopeWhereRelation;
+use SingleQuote\LaravelApiResource\Scopes\ScopeWith;
 
 use function collect;
 use function str;
@@ -16,23 +25,23 @@ trait HasApi
     /**
      * @param Builder $builder
      * @param FormRequest $request
-     * @return Builder
+     * @return Builder|QueryBuilder
      */
-    public function scopeApiDefaults(Builder $builder, FormRequest $request): Builder
+    public function scopeApiDefaults(Builder $builder, FormRequest $request): Builder|QueryBuilder
     {
-        return $builder->with($this->getRelationWith($request))
-                ->parseSearch($request->validated('search'))
-                ->parseOrderBy($request->validated('orderBy'))
-                ->parseOrderByDesc($request->validated('orderByDesc'))
-                ->parseSelect($request->validated('select'))
-                ->parseWhere($request->validated('where'))
-                ->parseOrWhere($request->validated('orWhere'))
-                ->parseWhereNotNull($request->validated('whereNotNull'))
-                ->parseWhereIn($request->validated('whereIn'))
-                ->parseWhereNotIn($request->validated('whereNotIn'))
-                ->parseHas($request->validated('has'))
-                ->parseDoesntHave($request->validated('doesntHave'))
-                ->parseWhereRelation($request->validated('whereRelation'));
+        ScopeWith::handle($builder, $request);
+        ScopeWhere::handle($builder, $request->validated('where', []));
+        ScopeWhere::handle($builder, $request->validated('orWhere', []), 'or');
+        ScopeHas::handle($builder, $request->validated('has', []));
+        ScopeDoesntHave::handle($builder, $request->validated('doesntHave', []));
+        ScopeWhereRelation::handle($builder, $request->validated('whereRelation', []));
+        ScopeSearch::handle($builder, $request->validated('search', []));
+        ScopeSelect::handle($builder, $request->validated('select', []));
+        ScopeOrder::handle($builder, $request->validated('orderBy'));
+        ScopeOrder::handle($builder, $request->validated('orderByDesc'), 'desc');
+
+        return $builder->parseWhereNotNull($request->validated('whereNotNull'))
+            ->parseWhereIn($request->validated('whereIn'));
     }
 
     /**
@@ -45,203 +54,9 @@ trait HasApi
             return $this;
         }
 
-        return $this->load($this->getRelationWith($request));
+        return $this->load(ScopeWith::getRelations($request));
     }
 
-    /**
-     * @param Builder $builder
-     * @param array|null $searchable
-     * @return Builder
-     */
-    public function scopeParseSearch(Builder $builder, ?array $searchable = []): Builder
-    {
-        if (!$searchable) {
-            return $builder;
-        }
-
-        return $builder->where(function (Builder $builder) use ($searchable) {
-
-            $this->applySearch($builder, $searchable);
-
-            return $builder;
-        });
-    }
-
-    /**
-     * @param Builder $builder
-     * @param array $searchable
-     * @return Builder
-     */
-    private function applySearch(Builder &$builder, array $searchable): Builder
-    {
-        $fields = ($searchable['fields'][0] ?? null) === '*' ? $this->getFillable() : $searchable['fields'];
-
-        foreach ($fields ?? [] as $column) {
-
-            if (str($column)->contains('|')) {
-                $builder = $this->searchRelation($builder, str($column)->before('|'), str($column)->after('|'), str($searchable['query'])->lower());
-
-                continue;
-            }
-
-            $key = str($column)->replace('.', '->')->value();
-
-            if (!in_array(str($key)->before('->')->value(), [...$this->getFillable(), 'created_at', 'updated_at', 'deleted_at'])) {
-                continue;
-            }
-
-            $search = str($searchable['query'])->lower()->explode(' ');
-
-            foreach ($search as $searchKey) {
-                $builder = $builder->orWhereRaw("LOWER($key) LIKE ?", ["%{$searchKey}%"]);
-            }
-        }
-
-        return $builder;
-    }
-
-    /**
-     * @param Builder $builder
-     * @param string $relation
-     * @param string $column
-     * @param string $search
-     * @return Builder
-     */
-    private function searchRelation(Builder $builder, string $relation, string $column, string $search): Builder
-    {
-        return $builder->orWhereHas($relation, function (Builder $builder) use ($column, $search) {
-            $builder->whereRaw("LOWER($column) LIKE ?", ["%{$search}%"]);
-        });
-    }
-
-    /**
-     * @param Builder $builder
-     * @param string|null $order
-     * @return Builder
-     */
-    public function scopeParseOrderBy(Builder $builder, ?string $order): Builder
-    {
-        if ($order) {
-            $builder->orderBy($order);
-        }
-
-        return $builder;
-    }
-
-    /**
-     * @param Builder $builder
-     * @param string|null $order
-     * @return Builder
-     */
-    public function scopeParseOrderByDesc(Builder $builder, ?string $order): Builder
-    {
-        if ($order) {
-            $builder->orderByDesc($order);
-        }
-
-        return $builder;
-    }
-
-    /**
-     * @param FormRequest|Request $request
-     * @return array
-     */
-    private function getRelationWith(FormRequest|Request $request): array
-    {
-        if ($request instanceof FormRequest) {
-            return $request->validated('with', []);
-        }
-
-        return $request->get('with', []);
-    }
-
-    /**
-     * @param Builder $builder
-     * @param array|null $scopes
-     * @return Builder
-     */
-    public function scopeParseSelect(Builder $builder, ?array $scopes = []): Builder
-    {
-        if (count($scopes ?? []) === 0) {
-            return $builder;
-        }
-
-        $builder->select('id');
-
-        foreach ($scopes ?? [] as $column) {
-
-            $key = str($column)->replace('.', '->')->value();
-
-            if (!in_array(str($key)->before('->')->value(), [...$this->getFillable(), 'created_at', 'updated_at', 'deleted_at'])) {
-                continue;
-            }
-
-            $builder->addSelect($key);
-        }
-
-        return $builder;
-    }
-
-    /**
-     * @param Builder $builder
-     * @param array|null $scopes
-     * @return Builder
-     */
-    public function scopeParseOrWhere(Builder $builder, ?array $scopes = []): Builder
-    {
-        return $this->scopeParseWhere($builder, $scopes, 'or');
-    }
-
-    /**
-     * @param Builder $builder
-     * @param array|null $scopes
-     * @param string $boolean
-     * @return Builder
-     */
-    public function scopeParseWhere(Builder $builder, ?array $scopes = [], string $boolean = 'and'): Builder
-    {
-        foreach ($scopes ?? [] as $column => $scope) {
-
-            $operator = is_array($scope) ? $this->parseOperator(array_key_first($scope)) : '=';
-            $value = is_array($scope) ? $scope[array_key_first($scope)] : $scope;
-
-            $key = str($column)
-                ->replace('.', '->')
-                ->value();
-
-            if (!in_array(str($key)->before('->')->value(), $this->getFillable())) {
-                continue;
-            }
-
-            if ($scope === 'null') {
-                $builder->whereNull($key);
-            } else {
-                $builder->where($key, $operator, $value, $boolean);
-            }
-        }
-
-        return $builder;
-    }
-
-    /**
-     * @param string $operator
-     * @return string
-     */
-    private function parseOperator(string $operator): string
-    {
-        switch($operator) {
-            case 'gt':
-                return '>';
-            case 'gte':
-                return '>=';
-            case 'lt':
-                return '<';
-            case 'lte':
-                return '<=';
-            default:
-                return '=';
-        }
-    }
 
     /**
      * @param Builder $builder
@@ -251,9 +66,7 @@ trait HasApi
     public function scopeParseWhereNotNull(Builder $builder, ?string $scope = null): Builder
     {
         if ($scope) {
-            $key = str($scope)->replace('.', '->')->value();
-
-            if (in_array(str($key)->before('->')->value(), $this->getFillable())) {
+            if (in_array(str($scope)->before('->')->value(), $this->getFillable())) {
                 $builder->whereNotNull($scope);
             }
         }
@@ -270,102 +83,11 @@ trait HasApi
     {
         foreach ($scopes ?? [] as $column => $scope) {
 
-            $key = str($column)
-                ->replace('.', '->')
-                ->value();
-
-            if (!in_array(str($key)->before('->')->value(), [...$this->getFillable(), 'id']) || !is_array($scope)) {
+            if (!in_array(str($column)->before('->')->value(), [...$this->getFillable(), 'id']) || !is_array($scope)) {
                 continue;
             }
 
-            $builder->whereIn($key, $scope);
-        }
-
-        return $builder;
-    }
-
-    /**
-     * @param Builder $builder
-     * @param array|null $scopes
-     * @return Builder
-     */
-    public function scopeParseWhereNotIn(Builder $builder, ?array $scopes = []): Builder
-    {
-        foreach ($scopes ?? [] as $column => $scope) {
-
-            $key = str($column)
-                ->replace('.', '->')
-                ->value();
-
-            if (!in_array(str($key)->before('->')->value(), [...$this->getFillable(), 'id']) || !is_array($scope)) {
-                continue;
-            }
-
-            $builder->whereNotIn($key, $scope);
-        }
-
-        return $builder;
-    }
-
-    /**
-     * @param Builder $builder
-     * @param array|null $scopes
-     * @return Builder
-     */
-    public function scopeParseHas(Builder $builder, ?array $scopes = []): Builder
-    {
-        foreach ($scopes ?? [] as $scope) {
-            $builder->has($scope);
-        }
-
-        return $builder;
-    }
-
-    /**
-     * @param Builder $builder
-     * @param array|null $scopes
-     * @return Builder
-     */
-    public function scopeParseDoesntHave(Builder $builder, ?array $scopes = []): Builder
-    {
-        foreach ($scopes ?? [] as $scope) {
-            $builder->doesntHave($scope);
-        }
-
-        return $builder;
-    }
-
-    /**
-     * @param Builder $builder
-     * @param array|null $scopes
-     * @return Builder
-     */
-    public function scopeParseWhereRelation(Builder $builder, ?array $scopes = []): Builder
-    {
-        foreach ($scopes ?? [] as $relation => $scope) {
-
-            if (is_array($scope) && in_array($relation, $this->definedRelations())) {
-                foreach ($scope as $column => $scopeValue) {
-                    $operator = is_array($scopeValue) ? $this->parseOperator(array_key_first($scopeValue)) : '=';
-                    $value = is_array($scopeValue) ? $scopeValue[array_key_first($scopeValue)] : $scopeValue;
-
-                    $key = str($column)
-                        ->replace('.', '->')
-                        ->value();
-
-                    if ($operator !== '=' && $value === null) {
-                        continue;
-                    }
-
-                    if ($value === null) {
-                        $builder->whereRelation($relation, $key, $value);
-                    }
-
-                    if ($value !== null) {
-                        $builder->whereRelation($relation, $key, $operator, $value);
-                    }
-                }
-            }
+            $builder->whereIn($column, $scope);
         }
 
         return $builder;

@@ -15,6 +15,7 @@ class MixedRule implements ValidationRule
         'gte',
         'lt',
         'lte',
+        'in',
     ];
 
     /**
