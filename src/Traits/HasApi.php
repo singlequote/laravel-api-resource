@@ -13,11 +13,12 @@ use SingleQuote\LaravelApiResource\Scopes\ScopeOrder;
 use SingleQuote\LaravelApiResource\Scopes\ScopeSearch;
 use SingleQuote\LaravelApiResource\Scopes\ScopeSelect;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWhere;
+use SingleQuote\LaravelApiResource\Scopes\ScopeWhereIn;
+use SingleQuote\LaravelApiResource\Scopes\ScopeWhereNotNull;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWhereRelation;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWith;
 
 use function collect;
-use function str;
 use function str_contains;
 
 trait HasApi
@@ -33,6 +34,8 @@ trait HasApi
         ScopeWhere::handle($builder, $request->validated('where', []));
         ScopeWhere::handle($builder, $request->validated('orWhere', []), 'or');
         ScopeHas::handle($builder, $request->validated('has', []));
+        ScopeWhereIn::handle($builder, $request->validated('whereIn', []));
+        ScopeWhereNotNull::handle($builder, $request->validated('whereNotNull', []));
         ScopeDoesntHave::handle($builder, $request->validated('doesntHave', []));
         ScopeWhereRelation::handle($builder, $request->validated('whereRelation', []));
         ScopeSearch::handle($builder, $request->validated('search', []));
@@ -40,8 +43,7 @@ trait HasApi
         ScopeOrder::handle($builder, $request->validated('orderBy'));
         ScopeOrder::handle($builder, $request->validated('orderByDesc'), 'desc');
 
-        return $builder->parseWhereNotNull($request->validated('whereNotNull'))
-            ->parseWhereIn($request->validated('whereIn'));
+        return $builder;
     }
 
     /**
@@ -55,42 +57,6 @@ trait HasApi
         }
 
         return $this->load(ScopeWith::getRelations($request));
-    }
-
-
-    /**
-     * @param Builder $builder
-     * @param string|null $scope
-     * @return Builder
-     */
-    public function scopeParseWhereNotNull(Builder $builder, ?string $scope = null): Builder
-    {
-        if ($scope) {
-            if (in_array(str($scope)->before('->')->value(), $this->getFillable())) {
-                $builder->whereNotNull($scope);
-            }
-        }
-
-        return $builder;
-    }
-
-    /**
-     * @param Builder $builder
-     * @param array|null $scopes
-     * @return Builder
-     */
-    public function scopeParseWhereIn(Builder $builder, ?array $scopes = []): Builder
-    {
-        foreach ($scopes ?? [] as $column => $scope) {
-
-            if (!in_array(str($column)->before('->')->value(), [...$this->getFillable(), 'id']) || !is_array($scope)) {
-                continue;
-            }
-
-            $builder->whereIn($column, $scope);
-        }
-
-        return $builder;
     }
 
     /**

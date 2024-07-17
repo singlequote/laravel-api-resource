@@ -4,6 +4,7 @@ namespace SingleQuote\LaravelApiResource\Service;
 
 use SingleQuote\LaravelApiResource\Infra\ApiModel;
 use SingleQuote\LaravelApiResource\Rules\MixedRule;
+use SingleQuote\LaravelApiResource\Rules\OrderByRule;
 
 use function config;
 
@@ -15,6 +16,9 @@ class ApiRequestService
      */
     public static function defaults(string $model): array
     {
+        $fillables = ApiModel::getFillable($model);
+        $relations = ApiModel::getRelations($model);
+
         return [
             // Set limit per page
             'limit' => 'nullable|int|max:'.config('laravel-api-resource.api.limit', 1000).'|min:1',
@@ -32,26 +36,27 @@ class ApiRequestService
             'whereNotIn' => 'nullable|array',
             'whereNotIn.*' => 'required|array',
             // Set whereNotNull
-            'whereNotNull' => 'nullable|string',
+            'whereNotNull' => 'nullable|array',
+            'whereNotNull.*' => 'required|string|in:'.$fillables,
             // Set Has
             'has' => 'nullable|array',
-            'has.*' => 'required|string|in:'.ApiModel::getRelations($model),
+            'has.*' => 'required|string|in:'.$relations,
             // Set doesntHave
             'doesntHave' => 'nullable|array',
-            'doesntHave.*' => 'required|string|in:'.ApiModel::getRelations($model),
+            'doesntHave.*' => 'required|string|in:'.$relations,
             // Set Where Relation
             'whereRelation' => 'nullable|array',
             'whereRelation.*' => 'required|array',
             'whereRelation.*.*' => ['required', new MixedRule()],
             // Set With relations
             'with' => 'nullable|array',
-            'with.*' => 'required|string|in:'.ApiModel::getRelations($model),
+            'with.*' => 'required|string|in:'.$relations,
             // Set select on columns
             'select' => 'nullable|array',
-            'select.*' => 'required|string|in:'.ApiModel::getFillable($model),
+            'select.*' => 'required|string|in:'.$fillables,
             // Set the order
-            'orderBy' => 'nullable|string|in:updated_at,created_at,'.ApiModel::getFillable($model),
-            'orderByDesc' => 'nullable|string|in:updated_at,created_at,'.ApiModel::getFillable($model),
+            'orderBy' => ['nullable', 'string', new OrderByRule($model)],
+            'orderByDesc' => ['nullable', 'string', new OrderByRule($model)],
         ];
     }
 

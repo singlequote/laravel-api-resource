@@ -21,11 +21,35 @@ class ScopeOrder
     public static function handle(Builder|QueryBuilder $builder, ?string $column, string $direction = 'asc'): Builder|QueryBuilder
     {
         if ($column) {
+            if(str($column)->contains('.')) {
+                return self::sortByRelation($builder, $column, $direction);
+            }
+
             $method = $direction === 'asc' ? 'orderBy' : 'orderByDesc';
 
-            $builder->{$method}($order);
+            $builder->{$method}($column);
         }
 
         return $builder;
+    }
+
+    /**
+     * @param Builder|QueryBuilder $builder
+     * @param string|null $key
+     * @param string $direction
+     * @return Builder|QueryBuilder
+     */
+    private static function sortByRelation(Builder|QueryBuilder $builder, ?string $key, string $direction = 'asc'): Builder|QueryBuilder
+    {
+        $relation = str($key)->beforeLast('.')->value();
+
+        $table = $builder->getModel()?->$relation()?->getModel()?->getTable() ?? null;
+        $column = str($key)->afterLast('.')->value();
+
+        $method = $direction === 'asc' ? 'orderBy' : 'orderByDesc';
+
+        return $builder->joinRelation("$relation")
+            ->addSelect("$table.$column as {$relation}_{$column}")
+            ->{$method}("{$relation}_{$column}");
     }
 }
