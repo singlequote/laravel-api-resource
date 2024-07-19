@@ -2,43 +2,47 @@
 
 namespace SingleQuote\LaravelApiResource\Infra;
 
-/**
- * Description of Operator
- *
- * @author wim_p
- */
 class Operator
 {
+
     /**
      * @param string $operator
      * @return string
      */
     public static function toSql(string $operator): string
     {
-        switch($operator) {
-            case 'gt':
-                return '>';
-            case 'gte':
-                return '>=';
-            case 'lt':
-                return '<';
-            case 'lte':
-                return '<=';
-            case 'in':
-                return 'LIKE';
-            case 'contains':
-                return 'LIKE';
-            case 'startsWith':
-                return 'LIKE%';
-            case 'endsWith':
-                return '%LIKE';
-            case 'notContains':
-                return 'NOT LIKE';
-            case 'notEqual':
-                return '!=';
-            default:
-                return '=';
+        if (in_array($operator, ['gt', 'greater'])) {
+            return '>';
         }
+        if (in_array($operator, ['gte', 'greaterEquals'])) {
+            return '>=';
+        }
+        if (in_array($operator, ['lt', 'lesser'])) {
+            return '<';
+        }
+        if (in_array($operator, ['lte', 'lesserEquals'])) {
+            return '<=';
+        }
+        if (in_array($operator, ['in', 'contains'])) {
+            return 'LIKE';
+        }
+        if (in_array($operator, ['nin', 'notContains'])) {
+            return 'NOT LIKE';
+        }
+        if (in_array($operator, ['sw', 'startsWith'])) {
+            return 'LIKE%';
+        }
+        if (in_array($operator, ['ew', 'endsWith'])) {
+            return '%LIKE';
+        }
+        if (in_array($operator, ['eq', 'equals'])) {
+            return '=';
+        }
+        if (in_array($operator, ['neq', 'notEqual'])) {
+            return '!=';
+        }
+
+        return '=';
     }
 
     /**
@@ -48,16 +52,24 @@ class Operator
     {
         return [
             'gt',
+            'greater',
             'gte',
+            'greaterEquals',
             'lt',
+            'lesser',
             'lte',
+            'lesserEquals',
             'in',
-            'eq',
-            'startsWith',
-            'endsWith',
-            'notContains',
             'contains',
+            'nin',
+            'notContains',
+            'sw',
+            'startsWith',
+            'ew',
+            'endsWith',
+            'eq',
             'equals',
+            'neq',
             'notEqual',
         ];
     }
