@@ -170,6 +170,21 @@ axios.get(route('api.users.index', {
 }))
 ```
 
+** Available operators **
+| Operator | Shorthand |
+|:--------:| -------------:|
+| startsWith | sw |
+| endsWith| ew |
+| notContains| nin |
+| contains| in |
+| equals | eq |
+| notEqual | neq |
+| greater | gt |
+| greaterEquals | gte |
+| lesser | lt |
+| lesserEquals | lte |
+
+
 **whereIn**
 The `whereIn` method verifies that a given column's value is contained within the given array:
 ```javascript
