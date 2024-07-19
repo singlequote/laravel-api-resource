@@ -1,8 +1,4 @@
 <?php
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/PHPClass.php to edit this template
- */
 
 namespace SingleQuote\LaravelApiResource\Infra;
 
@@ -30,8 +26,39 @@ class Operator
                 return '<=';
             case 'in':
                 return 'LIKE';
+            case 'contains':
+                return 'LIKE';
+            case 'startsWith':
+                return 'LIKE%';
+            case 'endsWith':
+                return '%LIKE';
+            case 'notContains':
+                return 'NOT LIKE';
+            case 'notEqual':
+                return '!=';
             default:
                 return '=';
         }
+    }
+
+    /**
+     * @return array
+     */
+    public static function allowed(): array
+    {
+        return [
+            'gt',
+            'gte',
+            'lt',
+            'lte',
+            'in',
+            'eq',
+            'startsWith',
+            'endsWith',
+            'notContains',
+            'contains',
+            'equals',
+            'notEqual',
+        ];
     }
 }

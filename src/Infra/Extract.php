@@ -19,8 +19,30 @@ class Extract
         $value = is_array($scope) ? $scope[array_key_first($scope)] : $scope;
 
         return [
-            $operator,
-            $operator === "LIKE" ? "%$value%" : $value,
+            str($operator)->replace('%', '')->value(),
+            self::parseValue($operator, $value),
         ];
+    }
+
+    /**
+     * @param string $operator
+     * @param string $value
+     * @return string
+     */
+    private static function parseValue(string $operator, string $value): string
+    {
+        if(in_array($operator, ["LIKE", "NOT LIKE"])) {
+            return "%$value%";
+        }
+
+        if($operator === "LIKE%") {
+            return "$value%";
+        }
+
+        if($operator === "%LIKE") {
+            return "%$value";
+        }
+
+        return $value;
     }
 }

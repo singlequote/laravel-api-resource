@@ -4,21 +4,10 @@ namespace SingleQuote\LaravelApiResource\Rules;
 
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
+use SingleQuote\LaravelApiResource\Infra\Operator;
 
 class MixedRule implements ValidationRule
 {
-    /**
-     * @var array
-     */
-    protected array $supportedAttributes = [
-        'gt',
-        'gte',
-        'lt',
-        'lte',
-        'in',
-        'eq',
-    ];
-
     /**
      * Run the validation rule.
      */
@@ -28,8 +17,8 @@ class MixedRule implements ValidationRule
             $fail('The :attribute must be either a string or array.');
         }
 
-        if(is_array($value) && !in_array(array_key_first($value), $this->supportedAttributes)) {
-            $fail('The :attribute is invalid.');
+        if(is_array($value) && !in_array(array_key_first($value), Operator::allowed())) {
+            $fail('The :attribute operator is invalid.');
         }
 
         if(is_string($value) && strlen($value) > 191) {
