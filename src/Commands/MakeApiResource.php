@@ -7,11 +7,10 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use SingleQuote\LaravelApiResource\Generator\StubGenerator;
-use SingleQuote\LaravelApiResource\Service\ApiRequestService;
+use SingleQuote\LaravelApiResource\Infra\ApiModel;
 use SingleQuote\LaravelApiResource\Traits\HasApi;
 use Symfony\Component\Finder\SplFileInfo;
 use Throwable;
-
 use function base_path;
 use function class_uses_recursive;
 use function collect;
@@ -266,11 +265,11 @@ class MakeApiResource extends Command
      */
     private function getFillablesForResource(): string
     {
-        $fillables = ApiRequestService::getFillable($this->config->modelPath);
+        $fillables = ApiModel::fillable($this->config->model);
 
         $content = str('');
 
-        foreach (explode(',', $fillables) as $fillable) {
+        foreach ($fillables as $fillable) {
             if (in_array($fillable, config('laravel-api-resource.exclude.resources', []))) {
                 continue;
             }
@@ -287,11 +286,11 @@ class MakeApiResource extends Command
      */
     private function getRelationsForResource(): string
     {
-        $relations = ApiRequestService::getRelations($this->config->modelPath, false);
+        $relations = ApiModel::relations($this->config->model, false);
 
         $content = str('');
 
-        foreach (strlen($relations) ? explode(',', $relations) : [] as $relation) {
+        foreach ($relations as $relation) {
             if (in_array($relation, config('laravel-api-resource.exclude.resources', []))) {
                 continue;
             }
@@ -327,13 +326,13 @@ class MakeApiResource extends Command
      */
     private function getFillablesForRequest(string $requiredLabel = 'required'): string
     {
-        $fillables = ApiRequestService::getFillable($this->config->modelPath);
+        $fillables = ApiModel::fillable($this->config->model);
 
         $pdoColumns = $this->getPDOColumns();
 
         $content = str('');
 
-        foreach (explode(',', $fillables) as $fillable) {
+        foreach ($fillables as $fillable) {
             if (in_array($fillable, config('laravel-api-resource.exclude.requests', [])) || $this->config->model->getKeyName() === $fillable) {
                 continue;
             }
@@ -363,8 +362,9 @@ class MakeApiResource extends Command
             $model = $this->config->model;
 
             return collect(DB::connection($model->getConnectionName())
-                            ->getSchemaBuilder()
-                            ->getColumns(str($model->getTable())->afterLast('.')));
+                    ->getSchemaBuilder()
+                    ->getColumns(str($model->getTable())->afterLast('.')));
+
         } catch (Throwable $ex) {
             return collect([]);
         }
@@ -391,9 +391,9 @@ class MakeApiResource extends Command
      */
     private function getColumnAttributes(string $column, ?array $pdoColumn = null): string
     {
-        $relations = ApiRequestService::getRelations($this->config->modelPath, false);
+        $relations = ApiModel::relations($this->config->model, false);
 
-        foreach (explode(',', $relations) as $relation) {
+        foreach ($relations as $relation) {
             $object = $this->config->model->$relation();
 
             if ($this->getClassName($relation) === 'BelongsTo' && $object->getForeignKeyName() === $column) {
@@ -451,11 +451,11 @@ class MakeApiResource extends Command
      */
     private function getAttributesForRequest(): string
     {
-        $fillables = ApiRequestService::getFillable($this->config->modelPath);
+        $fillables = ApiModel::fillable($this->config->model);
 
         $content = str('');
 
-        foreach (explode(',', $fillables) as $fillable) {
+        foreach ($fillables as $fillable) {
             if (in_array($fillable, config('laravel-api-resource.exclude.requests', [])) || $this->config->model->getKeyName() === $fillable) {
                 continue;
             }
