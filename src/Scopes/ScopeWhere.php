@@ -31,8 +31,11 @@ class ScopeWhere
                 return self::handleRelation($builder, $boolean, $column, $scope);
             }
 
-            $method = $value === 'null' ? "whereNull" : "where";
-            $builder->{$method}($column, $operator, $value, $boolean);
+            if($value === 'null'){
+                $builder->whereNull($column);
+            }else{
+                $builder->where($column, $operator, $value, $boolean);
+            }
         }
 
         return $builder;
