@@ -40,7 +40,7 @@ class ScopeSearch
      */
     private static function applySearch(Builder|QueryBuilder $builder, array $searchable): Builder|QueryBuilder
     {
-        $fields = $searchable['fields'][0] === '*' ? ApiModel::getFillable($builder->getModel()::class) : $searchable['fields'];
+        $fields = $searchable['fields'][0] === '*' ? ApiModel::fillable($builder->getModel()) : $searchable['fields'];
 
         foreach ($fields ?? [] as $column) {
 
