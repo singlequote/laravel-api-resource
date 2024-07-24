@@ -50,7 +50,7 @@ class ScopeSearch
                 continue;
             }
 
-            if (!in_array(str($column)->before('->')->value(), [...ApiModel::getFillable($builder->getModel()::class), 'created_at', 'updated_at', 'deleted_at'])) {
+            if (!in_array(str($column)->before('->')->value(), [...ApiModel::fillable($builder->getModel()), 'created_at', 'updated_at', 'deleted_at'])) {
                 continue;
             }
 
