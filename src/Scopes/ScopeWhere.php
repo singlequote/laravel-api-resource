@@ -31,11 +31,11 @@ class ScopeWhere
                 return self::handleRelation($builder, $boolean, $column, $scope);
             }
 
-            if($value === 'null' && $operator === '='){
+            if($value === 'null' && $operator === '=') {
                 $builder->whereNull($column);
-            }else if ($value === 'null'&& $operator === '!='){
+            } elseif ($value === 'null' && $operator === '!=') {
                 $builder->whereNotNull($column);
-            }else{
+            } else {
                 $builder->where($column, $operator, $value, $boolean);
             }
         }

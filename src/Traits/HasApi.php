@@ -12,6 +12,7 @@ use SingleQuote\LaravelApiResource\Scopes\ScopeHas;
 use SingleQuote\LaravelApiResource\Scopes\ScopeOrder;
 use SingleQuote\LaravelApiResource\Scopes\ScopeSearch;
 use SingleQuote\LaravelApiResource\Scopes\ScopeSelect;
+use SingleQuote\LaravelApiResource\Scopes\ScopeTrashed;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWhere;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWhereIn;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWhereNotNull;
@@ -42,6 +43,7 @@ trait HasApi
         ScopeSelect::handle($builder, $request->validated('select', []));
         ScopeOrder::handle($builder, $request->validated('orderBy'));
         ScopeOrder::handle($builder, $request->validated('orderByDesc'), 'desc');
+        ScopeTrashed::handle($builder, $request);
 
         return $builder;
     }

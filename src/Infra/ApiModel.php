@@ -99,11 +99,16 @@ class ApiModel
      */
     public static function fillable(Model $model, bool $withRelations = false): Collection
     {
-        $fillables = [
+        $timestamps = config('laravel-api-resource.columns.default', [
             'id',
             'created_at',
             'updated_at',
-            ...$model->getFillable(),
+        ]);
+
+        $fillables = [
+            ... $timestamps,
+            ... method_exists($model, 'bootSoftDeletes') ? ['deleted_at'] : [],
+            ... $model->getFillable(),
             ... $withRelations ? self::relations($model, true) : [],
         ];
 

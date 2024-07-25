@@ -4,7 +4,6 @@ namespace SingleQuote\LaravelApiResource\Infra;
 
 class Operator
 {
-
     /**
      * @param string $operator
      * @return string

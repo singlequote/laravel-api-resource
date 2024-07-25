@@ -57,6 +57,9 @@ class ApiRequestService
             // Set the order
             'orderBy' => ['nullable', 'string', new OrderByRule($model)],
             'orderByDesc' => ['nullable', 'string', new OrderByRule($model)],
+            // Trashed
+            'withTrashed' => ['nullable', 'boolean'],
+            'onlyTrashed' => ['nullable', 'boolean'],
         ];
     }
 

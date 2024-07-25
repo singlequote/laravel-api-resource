@@ -11,6 +11,7 @@ use SingleQuote\LaravelApiResource\Infra\ApiModel;
 use SingleQuote\LaravelApiResource\Traits\HasApi;
 use Symfony\Component\Finder\SplFileInfo;
 use Throwable;
+
 use function base_path;
 use function class_uses_recursive;
 use function collect;

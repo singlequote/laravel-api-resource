@@ -17,6 +17,22 @@ return [
         'translations' => '',
     ],
 
+    'columns' => [
+
+        /*
+        |--------------------------------------------------------------------------
+        | Default columns
+        |--------------------------------------------------------------------------
+        | These are the default columns the API will select from your database table.
+        | For example, The ID, created_at and updated_at columns are present on every table by default by laravel
+       */
+        'default' => [
+            'id',
+            'created_at',
+            'updated_at',
+        ],
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Exclude columns
