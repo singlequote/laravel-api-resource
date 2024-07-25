@@ -21,7 +21,7 @@ class OrderByRule implements ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         $relations = ApiModel::relations(new $this->model());
-        $fillable = explode(',', ApiModel::getFillable(new $this->model()));
+        $fillable = ApiModel::fillable(new $this->model());
 
         if(str($value)->contains('.') && str($value)->substrCount('.') > 1) {
             $fail('Only 1 nested relation is allowed on :attribute.');
