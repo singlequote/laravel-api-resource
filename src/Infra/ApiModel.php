@@ -101,6 +101,9 @@ class ApiModel
     {
         $fillables = [
             'id',
+            'created_at',
+            'updated_at',
+            'deleted_at',
             ...$model->getFillable(),
             ... $withRelations ? self::relations($model, true) : [],
         ];
