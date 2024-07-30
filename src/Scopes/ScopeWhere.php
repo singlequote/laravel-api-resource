@@ -30,6 +30,8 @@ class ScopeWhere
             if(str($column)->contains('.')) {
                 $builder = self::handleRelation($builder, $boolean, $column, $scope);
                 continue;
+            } else {
+                $column = "{$builder->getModel()->getTable()}.$column";
             }
 
             if($value === 'null' && $operator === '=') {
