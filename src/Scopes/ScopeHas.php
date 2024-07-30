@@ -24,7 +24,7 @@ class ScopeHas
             if(is_int($scope)) {
                 $builder->has($closure);
             } else {
-                $builder->has($scope, $closure);
+                $builder->whereHas($scope, $closure);
             }
         }
 

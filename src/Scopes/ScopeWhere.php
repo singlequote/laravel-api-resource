@@ -28,7 +28,8 @@ class ScopeWhere
             [$operator, $value] = Extract::operatorAndValue($scope);
 
             if(str($column)->contains('.')) {
-                return self::handleRelation($builder, $boolean, $column, $scope);
+                $builder = self::handleRelation($builder, $boolean, $column, $scope);
+                continue;
             }
 
             if($value === 'null' && $operator === '=') {
