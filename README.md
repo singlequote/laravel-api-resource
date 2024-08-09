@@ -286,6 +286,31 @@ axios.get(route('api.users.index', {
 }))
 ```
 
+**Custom orderable columns**
+When using for example the `withCount` or `withSum` on your model query by default that column isn't sortable because it doesn't exists in your fillable attribute. To make the custom column sortable you can add the `$apiOrderBy` attribute to your model to make those columns sortable
+
+To make for example article prices sortable, add the `withSum` to your query.
+
+```php
+$query->withSum('articles', 'price');
+```
+
+```php
+class Product extends Model
+{
+    /**
+     * @var array
+     */
+    public array $apiOrderBy = [
+        'articles_sum_price',
+    ];
+```
+
+next add the orderBy to your api request
+```url
+.../products?orderBy=articles_sum_price
+```
+
 ## Contributing
 
 Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
