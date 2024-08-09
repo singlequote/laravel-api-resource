@@ -20,9 +20,11 @@ class OrderByRule implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        $relations = ApiModel::relations(new $this->model());
-        $fillable = ApiModel::fillable(new $this->model());
-
+        $model = new $this->model();
+        
+        $relations = ApiModel::relations($model);
+        $fillable = ApiModel::fillable($model);
+               
         if(str($value)->contains('.') && str($value)->substrCount('.') > 1) {
             $fail('Only 1 nested relation is allowed on :attribute.');
         }
@@ -31,7 +33,7 @@ class OrderByRule implements ValidationRule
             $fail('Relation does not exists on :attribute.');
         }
 
-        if(! str($value)->contains('.') && ! in_array($value, [... $fillable, 'id'])) {
+        if(! str($value)->contains('.') && ! in_array($value, [... $fillable, 'id', ... ($model->apiOrderBy ?? [])])) {
             $fail('Column does not exists on :attribute.');
         }
     }
