@@ -31,9 +31,7 @@ class Api<modelName>Controller extends Controller
      */
     public function index(Index<modelName>Request $request, Index<modelPlural>Action $action): JsonResponse|AnonymousResourceCollection
     {
-        return $action->api()->onSuccess(function (AnonymousResourceCollection $data) {
-            return $data;
-        })->handle($request);
+        return $action->api()->data()->handle($request);
     }
 
     /**
