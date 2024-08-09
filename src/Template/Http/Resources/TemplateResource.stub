@@ -17,11 +17,6 @@ class <modelName>Resource extends JsonResource
     public function toArray(Request $request): array
     {
         return [<fillables>
-            
-            'created_at' => $this->whenHas('created_at'),
-            'updated_at' => $this->whenHas('updated_at'),
-            'deleted_at' => $this->whenHas('deleted_at'),
-
             ... $this->getRelations(),
             ... $this->getSearch($request),
             ... $this->getParse($request->get('parse', [])),
