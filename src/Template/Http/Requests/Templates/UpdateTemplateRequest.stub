@@ -13,7 +13,7 @@ class Update<modelName>Request extends FormRequest
      *
      * @return bool
      */
-    public function authorize()
+    public function authorize(): bool
     {
         return true;
     }
@@ -23,7 +23,7 @@ class Update<modelName>Request extends FormRequest
      *
      * @return array<string, mixed>
      */
-    public function rules()
+    public function rules(): array
     {
 
         return [<fillables>
@@ -32,6 +32,8 @@ class Update<modelName>Request extends FormRequest
     }
 
     /**
+     * Get custom attributes for validator errors.
+     *
      * @return array
      */
     public function attributes(): array
