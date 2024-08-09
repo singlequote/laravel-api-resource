@@ -25,7 +25,6 @@ class Index<modelName>Request extends FormRequest
      */
     public function rules(): array
     {
-
         return [
             ... ApiRequestService::defaults(<modelName>::class),
         ];
