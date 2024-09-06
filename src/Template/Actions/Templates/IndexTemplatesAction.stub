@@ -36,7 +36,7 @@ final class Index<modelPlural>Action extends Action
      */
     private function loadAdditionals(Index<modelName>Request $request, Builder &$query): Builder
     {
-        if($request->missing('orderBy', 'orderByDesc')) {
+        if (!$request->hasAny(['orderBy', 'orderByDesc'])) {
             return $query->orderBy('id');
         }
 
