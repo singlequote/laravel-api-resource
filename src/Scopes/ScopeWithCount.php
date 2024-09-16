@@ -33,9 +33,9 @@ class ScopeWithCount
     public static function getRelations(FormRequest|Request $request): array
     {
         if ($request instanceof FormRequest) {
-            return $request->validated('with', []);
+            return $request->validated('withCount', []);
         }
 
-        return $request->get('with', []);
+        return $request->get('withCount', []);
     }
 }
