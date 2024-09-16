@@ -51,6 +51,9 @@ class ApiRequestService
             // Set With relations
             'with' => 'nullable|array',
             'with.*' => 'required|string|in:'.$relations,
+            // Set With count
+            'withCount' => 'nullable|array',
+            'withCount.*' => 'required|string|in:'.$relations,
             // Set select on columns
             'select' => 'nullable|array',
             'select.*' => 'required|string|in:'.$fillables,
