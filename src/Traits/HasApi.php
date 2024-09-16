@@ -18,6 +18,7 @@ use SingleQuote\LaravelApiResource\Scopes\ScopeWhereIn;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWhereNotNull;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWhereRelation;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWith;
+use SingleQuote\LaravelApiResource\Scopes\ScopeWithCount;
 
 use function collect;
 use function str_contains;
@@ -32,6 +33,7 @@ trait HasApi
     public function scopeApiDefaults(Builder $builder, FormRequest $request): Builder|QueryBuilder
     {
         ScopeWith::handle($builder, $request);
+        ScopeWithCount::handle($builder, $request);
         ScopeWhere::handle($builder, $request->validated('where', []));
         ScopeWhere::handle($builder, $request->validated('orWhere', []), 'or');
         ScopeHas::handle($builder, $request->validated('has', []));
@@ -58,7 +60,8 @@ trait HasApi
             return $this;
         }
 
-        return $this->load(ScopeWith::getRelations($request));
+        return $this->load(ScopeWith::getRelations($request))
+            ->loadCount(ScopeWithCount::getRelations($request));
     }
 
     /**
