@@ -29,7 +29,7 @@ class ScopeOrder
             
             $table = $builder->getModel()?->getTable();
                         
-            $builder->{$method}("$table.$column", $scope);
+            $builder->{$method}("$table.$column");
         }
 
         return $builder;
