@@ -17,7 +17,7 @@ class ScopeWhereNotNull
         $table = $builder->getModel()?->getTable();
 
         foreach ($validated ?? [] as $scope) {
-            $builder->whereNotNull("$table.$column", $scope);
+            $builder->whereNotNull("$table.$scope");
         }
 
         return $builder;
