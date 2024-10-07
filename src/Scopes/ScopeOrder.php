@@ -26,8 +26,10 @@ class ScopeOrder
             }
 
             $method = $direction === 'asc' ? 'orderBy' : 'orderByDesc';
-
-            $builder->{$method}($column);
+            
+            $table = $builder->getModel()?->getTable();
+                        
+            $builder->{$method}("$table.$column", $scope);
         }
 
         return $builder;
