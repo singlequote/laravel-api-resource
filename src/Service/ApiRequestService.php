@@ -50,7 +50,7 @@ class ApiRequestService
             'whereRelation.*.*' => ['required', new MixedRule()],
             // Set With relations
             'with' => 'nullable|array',
-            'with.*' => 'required|string|in:'.$relations,
+            'with.*' => 'required',
             // Set With count
             'withCount' => 'nullable|array',
             'withCount.*' => 'required|string|in:'.$relations,

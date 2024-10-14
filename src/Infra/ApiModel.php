@@ -22,7 +22,7 @@ class ApiModel
      */
     public static function getRelations(string|Model $modelClass, bool $withSubRelations = true): string
     {
-        if($modelClass instanceof Model) {
+        if ($modelClass instanceof Model) {
             $model = $modelClass;
         } else {
             if (!class_exists($modelClass)) {
@@ -44,34 +44,39 @@ class ApiModel
      */
     public static function relations(Model $model, bool $withSubRelations = true): array
     {
-        $relations = $model->definedRelations();
+        $cacheKey = str($model::class)->prepend('relations-')->append('-wr-')->append($withSubRelations ? 'true' : 'false')->slug();
 
-        $additionalRelations = $withSubRelations ? ($model->apiRelations ?? []) : [];
+        return cache()->remember($cacheKey, config('laravel-api-resource.cache.relations', 3600), function () use ($model, $withSubRelations) {
 
-        foreach ($relations as $relation) {
+            $relations = $model->definedRelations();
 
-            if(! $withSubRelations) {
-                continue;
+            $additionalRelations = $withSubRelations ? ($model->apiRelations ?? []) : [];
+
+            foreach ($relations as $relation) {
+
+                if (!$withSubRelations) {
+                    continue;
+                }
+
+                $additionalRelations[] = $relation;
+
+                try {
+                    $relationModel = $model->$relation()->getModel();
+                } catch (Throwable $ex) {
+                    continue;
+                }
+
+
+                if (isset($relationModel->apiRelations)) {
+                    $additionalRelations = [
+                        ... $additionalRelations,
+                        ... collect($relationModel->apiRelations)->map(fn ($r) => "$relation.$r")->toArray()
+                    ];
+                }
             }
 
-            $additionalRelations[] = $relation;
-
-            try {
-                $relationModel = $model->$relation()->getModel();
-            } catch (Throwable $ex) {
-                continue;
-            }
-
-
-            if (isset($relationModel->apiRelations)) {
-                $additionalRelations = [
-                    ... $additionalRelations,
-                    ... collect($relationModel->apiRelations)->map(fn ($r) => "$relation.$r")->toArray()
-                ];
-            }
-        }
-
-        return array_merge($relations, $additionalRelations);
+            return array_merge($relations, $additionalRelations);
+        });
     }
 
     /**
@@ -80,13 +85,9 @@ class ApiModel
      */
     public static function getFillable(string|Model $modelClass, bool $withRelations = false): string
     {
-        if($modelClass instanceof Model) {
+        if ($modelClass instanceof Model) {
             $model = $modelClass;
         } else {
-            if (!class_exists($modelClass)) {
-                return '';
-            }
-
             $model = (new $modelClass());
         }
 
@@ -99,23 +100,27 @@ class ApiModel
      */
     public static function fillable(Model $model, bool $withRelations = false): Collection
     {
-        $timestamps = config('laravel-api-resource.columns.default', [
-            'id',
-            'created_at',
-            'updated_at',
-        ]);
+        $cacheKey = str($model::class)->prepend('fillables-')->append('-wr-')->append($withRelations ? 'true' : 'false')->slug();
 
-        $fillables = [
-            ... $timestamps,
-            ... method_exists($model, 'bootSoftDeletes') ? ['deleted_at'] : [],
-            ... $model->getFillable(),
-            ... $withRelations ? self::relations($model, true) : [],
-        ];
+        return cache()->remember($cacheKey, config('laravel-api-resource.cache.fillables', 3600), function () use ($model, $withRelations) {
+            $timestamps = config('laravel-api-resource.columns.default', [
+                'id',
+                'created_at',
+                'updated_at',
+            ]);
 
-        $hidden = $model->getHidden();
+            $fillables = [
+                ... $timestamps,
+                ... method_exists($model, 'bootSoftDeletes') ? ['deleted_at'] : [],
+                ... $model->getFillable(),
+                ... $withRelations ? self::relations($model, true) : [],
+            ];
 
-        return collect($fillables)->filter(function ($fill) use ($hidden) {
-            return !in_array($fill, $hidden);
+            $hidden = $model->getHidden();
+
+            return collect($fillables)->filter(function ($fill) use ($hidden) {
+                return !in_array($fill, $hidden);
+            });
         });
     }
 }
