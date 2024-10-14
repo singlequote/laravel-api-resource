@@ -14,10 +14,8 @@ class ScopeWhereNotNull
      */
     public static function handle(Builder|QueryBuilder $builder, array $validated): Builder|QueryBuilder
     {
-        $table = $builder->getModel()?->getTable();
-
         foreach ($validated ?? [] as $scope) {
-            $builder->whereNotNull("$table.$scope");
+            $builder->whereNotNull($scope);
         }
 
         return $builder;

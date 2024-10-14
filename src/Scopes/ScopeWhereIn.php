@@ -21,8 +21,7 @@ class ScopeWhereIn
                 continue;
             }
 
-            $table = $builder->getModel()?->getTable();   
-            $builder->whereIn("$table.$column", $scope);
+            $builder->whereIn($column, $scope);
         }
 
         return $builder;

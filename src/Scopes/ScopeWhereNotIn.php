@@ -21,8 +21,7 @@ class ScopeWhereNotIn
                 continue;
             }
 
-            $table = $builder->getModel()?->getTable();   
-            $builder->whereNotIn("$table.$column", $scope);
+            $builder->whereNotIn($column, $scope);
         }
 
         return $builder;
