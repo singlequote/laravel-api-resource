@@ -1,10 +1,12 @@
 
+
 # Laravel API Resources made simple
 
-The laravel-api-resource package simplifies the process of working with JSON
-responses in Laravel applications. It provides a straightforward way to create consistent and standardized API resources, leveraging Laravel’s built-in resource classes while adhering to JSON
-specifications. This package helps developers efficiently manage resource transformations, handle relationships, and customize resource attributes, ensuring a clean and maintainable API development workflow. Whether you're building a new API or maintaining an existing one, laravel-api-resource enhances your ability to deliver robust and compliant JSON
-responses with minimal effort. 
+This package helps developers efficiently manage resource transformations, handle relationships, and customize resource attributes, ensuring a clean and maintainable API development workflow. Whether you're building a new API or maintaining an existing one, laravel-api-resource enhances your ability to deliver robust and compliant JSON responses with minimal effort. 
+
+This package generates a complete api set for your model. From controller to action to request to resource. All you have to do is edit the form requests. 
+
+> Version > 2.1 adds the ability to pass additional attributes to the relation method. See # Relations. 
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/singlequote/laravel-api-resource.svg?style=flat-square)](https://packagist.org/packages/singlequote/laravel-api-resource)
 [![Total Downloads](https://img.shields.io/packagist/dt/singlequote/laravel-api-resource.svg?style=flat-square)](https://packagist.org/packages/singlequote/laravel-api-resource)
@@ -95,6 +97,7 @@ The package comes with default api options. To use the provided helpers, add the
 In the code previews below we use a package named [Ziggy](https://github.com/tighten/ziggy) to parse the url. If you don't use any javascript libraries to build your url you have to manual build the url according to the previews below.
 For example: 
 ```javascript
+// using the Ziggy package
 axios.get(route('api.users.index', {
 	limit : 100
 }))
@@ -102,6 +105,10 @@ axios.get(route('api.users.index', {
 will look like
 ```
 GET: <your_site_url>/api/users?limit=100
+```
+Manual
+```javascript
+axios.get('/api/users?limit=100')
 ```
 
 | helper | value |
@@ -116,12 +123,12 @@ GET: <your_site_url>/api/users?limit=100
 | has | array |
 | doesntHave | array |
 | whereRelation | array |
-| with | array |
+| with | array|
 | select | array |
 | orderBy | string |
 | orderByDesc | string |
 
-**limit**
+## limit
 The default limit provided by the package is set to `1000` results per page. You can change the default in the `laravel-api-resource` config file. To change the limit for a single request you can use the `limit` helper.
 ```javascript
 axios.get(route('api.users.index', {
@@ -129,7 +136,7 @@ axios.get(route('api.users.index', {
 }))
 ```
 
-**search**
+## search
 A search helper is available if you want to create a search input.  The search field accepts an array with 2 required fields. The field and query. The fields are the columns the api should search in. The query is the query used to search in the columns. 
 ```javascript
 axios.get(route('api.users.index', {
@@ -138,6 +145,7 @@ axios.get(route('api.users.index', {
         query: "john"
     }
 }))
+// /api/users?search[fields][0]=name&search[fields][1]=email&search[query]=john
 ```
 If you want to search all fillable columns within your model you can use the wildcard `*` as your searchfield
 ```javascript
@@ -147,10 +155,11 @@ axios.get(route('api.users.index', {
         query: "john"
     }
 }))
+// /api/users?search[fields][0]=*&search[query]=john
 ```
 
 
-**where**
+## where
 You may use the query builder's `where` method to add "where" clauses to the query. The most basic call to the `where` method requires 2 arguments. The first argument is the name of the column. The second argument is the value to compare against the column's value.
 ```javascript
 axios.get(route('api.users.index', {
@@ -158,6 +167,7 @@ axios.get(route('api.users.index', {
         first_name: "john"
     }
 }))
+// /api/users?where[first_name]=john
 ```
 You may also pass an additional operator to retrieve data for example, get all users younger than a certain date
 ```javascript
@@ -168,9 +178,10 @@ axios.get(route('api.users.index', {
         } 
     }
 }))
+// /api/users?where[date_of_birth][gt]=1995-01-31
 ```
 
-** Available operators **
+**Available operators**
 | Operator | Shorthand |
 |:--------:| -------------:|
 | startsWith | sw |
@@ -185,7 +196,7 @@ axios.get(route('api.users.index', {
 | lesserEquals | lte |
 
 
-**whereIn**
+## whereIn
 The `whereIn` method verifies that a given column's value is contained within the given array:
 ```javascript
 axios.get(route('api.users.index', {
@@ -193,8 +204,9 @@ axios.get(route('api.users.index', {
         role: ['admin', 'employee']
     }
 }))
+// /api/users?whereIn[role][0]=admin&whereIn[role][1]=employee
 ```
-**whereNotIn**
+## whereNotIn
 The `whereNotIn` method verifies that the given column's value is not contained in the given array
 ```javascript
 axios.get(route('api.users.index', {
@@ -202,29 +214,33 @@ axios.get(route('api.users.index', {
         role: ['quests', 'visitors']
     }
 }))
+// /api/users?whereNotIn[role][0]=quests&whereNotIn[role][1]=visitors
 ```
-**whereNotNull**
+## whereNotNull
 The `whereNotNull` method verifies that the given column's value is not `NULL`
 ```javascript
 axios.get(route('api.users.index', {
     whereNotNull: "password"
 }))
+// /api/users?whereNotNull[0]=password
 ```
-**has**
+## has
 When retrieving model records, you may wish to limit your results based on the existence of a relationship. For example, imagine you want to retrieve all users that have at least one role.
 ```javascript
 axios.get(route('api.users.index', {
     has:  ['roles']
 }))
+// /api/users?has[0]=roles
 ```
-**doesntHave**
+## doesntHave
 When retrieving model records, you may wish to limit your results based on the existence of a relationship. For example, imagine you want to retrieve all users don't have any roles attached.
 ```javascript
 axios.get(route('api.users.index', {
     doesntHave:  ['roles']
 }))
+// /api/users?doesntHave[0]=roles
 ```
-**whereRelation**
+## whereRelation
 If you would like to query for a relationship's existence with a single, simple where condition attached to the relationship query.
 ```javascript
 axios.get(route('api.users.index', {
@@ -234,6 +250,7 @@ axios.get(route('api.users.index', {
         }
     }
 }))
+// /api/users?whereRelation[roles][name]=admin
 ```
 
 You may also pass an additional operator to retrieve data for example, get all users where the role was created after a certain date.
@@ -247,18 +264,20 @@ axios.get(route('api.users.index', {
         }
     }
 }))
+// /api/users?whereRelation[roles][created_at][gt]=2024-01-01
 ```
 
 
 
-**with**
+## with
 Sometimes you may need to eager load several different relationships. To do so, just pass an array of relationships to the `with` method
 ```javascript
 axios.get(route('api.users.index', {
     with: ['roles']
 }))
+// /api/users?with[0]=roles
 ```
-**Using `with` with depth**
+**Using `with` on sub relations**
 When you want to retrieve a relation containing other relations you can set a property on each model. This allows you to allow certain models to accept multiple depths
 Add the property `$apiRelations` to your model.
 
@@ -270,23 +289,61 @@ class User extends Authenticatable
         'roles.permissions', //allows for users.roles.permissions
     ];
 ```
+**Passing additional properties to relations**
+The `with` method also accepts a json object. This way you can pass the same methods to relations.
+For example, if you would like to retrieve only the name of the roles
+```javascript
+axios.get(route('api.users.index', {
+    with: {
+	    invitations: true,
+	    roles: {
+		    select: ['name']
+	    }
+	}
+}))
+// /api/users?with[invitations]=1&with[roles][roles][select][0][name]
+```
+Even include the permissions
+```javascript
+axios.get(route('api.users.index', {
+    with: {
+	    invitations: true,
+	    roles: {
+		    select: ['name'],
+		    with: {
+			    permissions: {
+				    select: ['name'],
+			    }
+		    }
+	    }
+	}
+}))
+```
 
-**select**
+## select
 Sometimes you may only need a few columns from the resource and keep your api responses small.
 ```javascript
 axios.get(route('api.users.index', {
     select: ['id', 'name']
 }))
 ```
-**orderBy/orderByDesc**
+## orderBy/orderByDesc
 Sometimes you may want to change the ordering form your api response. You can use the `orderBy` or `orderByDesc` helper
 ```javascript
 axios.get(route('api.users.index', {
     orderBy: 'name'
 }))
+// /api/users?orderBy=name
+```
+**Order relations**
+```javascript
+axios.get(route('api.users.index', {
+    orderBy: 'roles.name'
+}))
+// /api/users?orderBy=roles.name
 ```
 
-**Custom orderable columns**
+## Custom orderable columns
 When using for example the `withCount` or `withSum` on your model query by default that column isn't sortable because it doesn't exists in your fillable attribute. To make the custom column sortable you can add the `$apiOrderBy` attribute to your model to make those columns sortable
 
 To make for example article prices sortable, add the `withSum` to your query.
