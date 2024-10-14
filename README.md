@@ -6,7 +6,7 @@ This package helps developers efficiently manage resource transformations, handl
 
 This package generates a complete api set for your model. From controller to action to request to resource. All you have to do is edit the form requests. 
 
-> Version > 2.1 adds the ability to pass additional attributes to the relation method. See # Relations. 
+> Version > 2.1 adds the ability to pass additional attributes to the relation method. See [the with method](https://github.com/singlequote/laravel-api-resource?tab=readme-ov-file#with). 
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/singlequote/laravel-api-resource.svg?style=flat-square)](https://packagist.org/packages/singlequote/laravel-api-resource)
 [![Total Downloads](https://img.shields.io/packagist/dt/singlequote/laravel-api-resource.svg?style=flat-square)](https://packagist.org/packages/singlequote/laravel-api-resource)
