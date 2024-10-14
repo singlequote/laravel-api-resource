@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
+use ReflectionClass;
 use SingleQuote\LaravelApiResource\Scopes\ScopeDoesntHave;
 use SingleQuote\LaravelApiResource\Scopes\ScopeHas;
 use SingleQuote\LaravelApiResource\Scopes\ScopeOrder;
@@ -19,6 +20,9 @@ use SingleQuote\LaravelApiResource\Scopes\ScopeWhereNotNull;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWhereRelation;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWith;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWithCount;
+
+use function collect;
+use function str_contains;
 
 trait HasApi
 {
