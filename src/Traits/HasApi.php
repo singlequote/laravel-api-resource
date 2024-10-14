@@ -61,4 +61,18 @@ trait HasApi
         return $this->load(ScopeWith::getRelations($request))
             ->loadCount(ScopeWithCount::getRelations($request));
     }
+
+    /**
+     * @return array
+     */
+    public function definedRelations(): array
+    {
+        $reflector = new ReflectionClass(get_called_class());
+
+        return collect($reflector->getMethods())
+                ->filter(function ($method) {
+                    return !empty($method->getReturnType()) && !empty($method->getReturnType()) && str_contains($method->getReturnType(), 'Illuminate\Database\Eloquent\Relations');
+                })
+                ->pluck('name')
+                ->all();
 }
