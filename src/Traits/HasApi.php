@@ -75,4 +75,5 @@ trait HasApi
                 })
                 ->pluck('name')
                 ->all();
+    }
 }
