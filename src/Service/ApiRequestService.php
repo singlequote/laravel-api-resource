@@ -36,6 +36,9 @@ class ApiRequestService
             'whereNotIn' => 'nullable|array',
             'whereNotIn.*' => 'required|array',
             // Set whereNotNull
+            'whereNull' => 'nullable|array',
+            'whereNull.*' => 'required|string|in:'.$fillables,
+            // Set whereNotNull
             'whereNotNull' => 'nullable|array',
             'whereNotNull.*' => 'required|string|in:'.$fillables,
             // Set Has

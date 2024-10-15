@@ -16,6 +16,7 @@ use SingleQuote\LaravelApiResource\Scopes\ScopeTrashed;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWhere;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWhereIn;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWhereNotIn;
+use SingleQuote\LaravelApiResource\Scopes\ScopeWhereNull;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWhereNotNull;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWhereRelation;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWith;
@@ -40,6 +41,7 @@ trait HasApi
         ScopeHas::handle($builder, $request->validated('has', []));
         ScopeWhereIn::handle($builder, $request->validated('whereIn', []));
         ScopeWhereNotIn::handle($builder, $request->validated('whereNotIn', []));
+        ScopeWhereNull::handle($builder, $request->validated('whereNull', []));
         ScopeWhereNotNull::handle($builder, $request->validated('whereNotNull', []));
         ScopeDoesntHave::handle($builder, $request->validated('doesntHave', []));
         ScopeWhereRelation::handle($builder, $request->validated('whereRelation', []));
