@@ -119,6 +119,7 @@ axios.get('/api/users?limit=100')
 | orWhere| array |
 | whereIn | array |
 | whereNotIn | array |
+| whereNull | string |
 | whereNotNull | string |
 | has | array |
 | doesntHave | array |
@@ -215,6 +216,14 @@ axios.get(route('api.users.index', {
     }
 }))
 // /api/users?whereNotIn[role][0]=quests&whereNotIn[role][1]=visitors
+```
+## whereNull
+The `whereNull` method verifies that the given column's value is `NULL`
+```javascript
+axios.get(route('api.users.index', {
+    whereNull: "email_verified_at"
+}))
+// /api/users?whereNull[0]=email_verified_at
 ```
 ## whereNotNull
 The `whereNotNull` method verifies that the given column's value is not `NULL`
