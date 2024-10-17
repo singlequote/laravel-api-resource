@@ -32,15 +32,19 @@ class ScopeWhereRelation
     /**
      * @param Builder|QueryBuilder $builder
      * @param string $relation
-     * @param string $column
+     * @param string $key
      * @param string|array $scopeValue
      * @return Builder|QueryBuilder
      */
-    private static function build(Builder|QueryBuilder $builder, string $relation, string $column, string|array$scopeValue, string $boolean): Builder|QueryBuilder
+    private static function build(Builder|QueryBuilder $builder, string $relation, string $key, string|array$scopeValue, string $boolean): Builder|QueryBuilder
     {
         [$operator, $value] = Extract::operatorAndValue($scopeValue);
 
         $method = $boolean === 'and' ? 'whereRelation' : 'orWhereRelation';
+
+        $relationTable = $builder->getModel()->{$relation}()->getModel()->getTable();
+
+        $column = "$relationTable.$key";
 
         if ($value === null) {
             $builder->{$method}($relation, $column, $value);
