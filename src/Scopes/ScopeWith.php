@@ -7,9 +7,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use SingleQuote\LaravelApiResource\Http\Requests\RelationWithRequest;
-use SingleQuote\LaravelApiResource\Service\ApiRequestService;
+use SingleQuote\LaravelApiResource\Infra\ReExecute;
 
 /**
  * Description of ScopeWhere
@@ -33,7 +31,7 @@ class ScopeWith
 
         foreach($relations as $relation => $data) {
             if(is_string($relation) && is_array($data)) {
-                self::parseRelationBuilder($builder, $request, $relation, $data);
+                self::parseRelationBuilder($builder, $relation, $data);
                 continue;
             }
 
@@ -50,39 +48,15 @@ class ScopeWith
 
     /**
      * @param Builder $builder
-     * @param FormRequest|Request $request
      * @param string $relation
      * @param array $data
      * @return Builder
      */
-    public static function parseRelationBuilder(Builder &$builder, FormRequest|Request $request, string $relation, array $data): Builder
+    public static function parseRelationBuilder(Builder &$builder, string $relation, array $data): Builder
     {
-        return $builder->with([$relation => function (Relation $query) use ($request, $data) {
-            $query->apiDefaults(self::createFormRequestValidator($request, $query, $data));
+        return $builder->with([$relation => function (Relation $query) use ($data) {
+            return ReExecute::handle($query, $data);
         }]);
-    }
-
-    /**
-     *
-     * @param FormRequest|Request $request
-     * @param Relation $query
-     * @param array $data
-     * @return RelationWithRequest
-     */
-    public static function createFormRequestValidator(FormRequest|Request $request, Relation $query, array $data): RelationWithRequest
-    {
-        $validator = Validator::make($data, ApiRequestService::defaults($query->getModel()::class));
-
-        $newRequest = new RelationWithRequest();
-
-        $newRequest->setUserResolver(function () use ($request) {
-            return $request->user();
-        });
-
-        $newRequest->merge($data);
-        $newRequest->setValidator($validator);
-
-        return $newRequest;
     }
 
     /**

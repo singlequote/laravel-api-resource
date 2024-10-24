@@ -42,8 +42,8 @@ class ApiRequestService
             'whereNotNull' => 'nullable|array',
             'whereNotNull.*' => 'required|string|in:'.$fillables,
             // Set Has
-            'has' => 'nullable|array',
-            'has.*' => 'required|string|in:'.$relations,
+            'has' => 'nullable',
+            'has.*' => 'required',
             // Set doesntHave
             'doesntHave' => 'nullable|array',
             'doesntHave.*' => 'required|string|in:'.$relations,
