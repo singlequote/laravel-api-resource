@@ -1,12 +1,13 @@
 
 
+
 # Laravel API Resources made simple
 
 This package helps developers efficiently manage resource transformations, handle relationships, and customize resource attributes, ensuring a clean and maintainable API development workflow. Whether you're building a new API or maintaining an existing one, laravel-api-resource enhances your ability to deliver robust and compliant JSON responses with minimal effort. 
 
 This package generates a complete api set for your model. From controller to action to request to resource. All you have to do is edit the form requests. 
 
-> Version > 2.1 adds the ability to pass additional attributes to the relation method. See [the with method](https://github.com/singlequote/laravel-api-resource?tab=readme-ov-file#with). 
+> Version > 2.1 adds the ability to pass additional attributes to the `relation` and `has`  method. See [the with method](https://github.com/singlequote/laravel-api-resource?tab=readme-ov-file#with). 
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/singlequote/laravel-api-resource.svg?style=flat-square)](https://packagist.org/packages/singlequote/laravel-api-resource)
 [![Total Downloads](https://img.shields.io/packagist/dt/singlequote/laravel-api-resource.svg?style=flat-square)](https://packagist.org/packages/singlequote/laravel-api-resource)
@@ -241,6 +242,21 @@ axios.get(route('api.users.index', {
 }))
 // /api/users?has[0]=roles
 ```
+**Digging deeper**
+You can add additional parameters to the `has` object. For example, if you would like to get all users that with certain roles.
+```javascript
+axios.get(route('api.users.index', {
+    has: {
+	    roles: {
+			whereIn: {
+				id: [1, 2]
+			}
+		}
+	}
+}))
+// /api/users?has[roles][whereIn][id][0]=1&has[roles][whereIn][id][1]=2
+```
+
 ## doesntHave
 When retrieving model records, you may wish to limit your results based on the existence of a relationship. For example, imagine you want to retrieve all users don't have any roles attached.
 ```javascript
