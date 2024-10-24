@@ -239,17 +239,19 @@ axios.get(route('api.users.index', {
 }))
 // /api/users?has[0]=roles
 ```
+
 **Digging deeper**
+
 You can add additional parameters to the `has` object. For example, if you would like to get all users that with certain roles.
 ```javascript
 axios.get(route('api.users.index', {
     has: {
-	    roles: {
-			whereIn: {
-				id: [1, 2]
-			}
-		}
+	roles: {
+            whereIn: {
+                id: [1, 2]
+            }
 	}
+    }
 }))
 // /api/users?has[roles][whereIn][id][0]=1&has[roles][whereIn][id][1]=2
 ```
