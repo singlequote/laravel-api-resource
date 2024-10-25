@@ -25,6 +25,11 @@ class ScopeWhere
     {
         foreach ($validated ?? [] as $column => $scope) {
 
+            if(is_integer($column)) {
+                $builder = self::handle($builder, $scope, $boolean);
+                continue;
+            }
+
             [$operator, $value] = Extract::operatorAndValue($scope);
 
             if(str($column)->contains('.')) {
