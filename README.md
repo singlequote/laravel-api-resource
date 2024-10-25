@@ -1,3 +1,4 @@
+
 # Laravel API Resources made simple
 
 This package helps developers efficiently manage resource transformations, handle relationships, and customize resource attributes, ensuring a clean and maintainable API development workflow. Whether you're building a new API or maintaining an existing one, laravel-api-resource enhances your ability to deliver robust and compliant JSON responses with minimal effort. 
@@ -178,6 +179,27 @@ axios.get(route('api.users.index', {
     }
 }))
 // /api/users?where[date_of_birth][gt]=1995-01-31
+```
+**Digging Deeper**
+
+If you want to filter multiple times on the same column, you can change the `where` object to an array and add the `where` statements as array objects. 
+
+Below we will retrieve all users that were created on a specific day
+```javascript
+axios.get(route('api.users.index', {
+     where: [
+	      {
+	          created_at: {
+	              lte: "1995-01-31 23:59"
+	          }
+	      }, {
+	          created_at: {
+	              gte: "1995-01-31 00:00"
+	          }
+	      }
+	  ],
+}))
+// /api/users?where[0][date_of_birth][lte]=1995-01-31 23:59&where[1][date_of_birth][gte]=1995-01-31 00:00
 ```
 
 **Available operators**
