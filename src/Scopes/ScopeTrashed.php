@@ -20,10 +20,10 @@ class ScopeTrashed
      */
     public static function handle(Builder|QueryBuilder $builder, FormRequest $request): Builder|QueryBuilder
     {
-        if($request->validated('withTrashed', false)) {
+        if ($request->validated('withTrashed', false)) {
             return $builder->withTrashed();
         }
-        if($request->validated('onlyTrashed', false)) {
+        if ($request->validated('onlyTrashed', false)) {
             return $builder->onlyTrashed();
         }
 

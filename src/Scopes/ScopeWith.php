@@ -25,17 +25,17 @@ class ScopeWith
     {
         $relations = self::getRelations($request);
 
-        if(count($relations) === 0) {
+        if (count($relations) === 0) {
             return $builder;
         }
 
-        foreach($relations as $relation => $data) {
-            if(is_string($relation) && is_array($data)) {
+        foreach ($relations as $relation => $data) {
+            if (is_string($relation) && is_array($data)) {
                 self::parseRelationBuilder($builder, $relation, $data);
                 continue;
             }
 
-            if(is_string($relation) && (bool) $data === true) {
+            if (is_string($relation) && (bool) $data === true) {
                 $builder->with($relation);
                 continue;
             }

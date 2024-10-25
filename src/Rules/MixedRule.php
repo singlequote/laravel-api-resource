@@ -26,7 +26,7 @@ class MixedRule implements ValidationRule
         //            $fail('The :attribute operator is invalid.');
         //        }
 
-        if(is_string($value) && strlen($value) > 191) {
+        if (is_string($value) && strlen($value) > 191) {
             $fail('The :attribute is invalid.');
         }
     }

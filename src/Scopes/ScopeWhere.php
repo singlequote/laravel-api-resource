@@ -25,21 +25,21 @@ class ScopeWhere
     {
         foreach ($validated ?? [] as $column => $scope) {
 
-            if(is_integer($column)) {
+            if (is_integer($column)) {
                 $builder = self::handle($builder, $scope, $boolean);
                 continue;
             }
 
             [$operator, $value] = Extract::operatorAndValue($scope);
 
-            if(str($column)->contains('.')) {
+            if (str($column)->contains('.')) {
                 $builder = self::handleRelation($builder, $boolean, $column, $scope);
                 continue;
             } else {
                 $column = "{$builder->getModel()->getTable()}.$column";
             }
 
-            if($value === 'null' && $operator === '=') {
+            if ($value === 'null' && $operator === '=') {
                 $builder->whereNull($column);
             } elseif ($value === 'null' && $operator === '!=') {
                 $builder->whereNotNull($column);

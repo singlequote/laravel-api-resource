@@ -21,7 +21,7 @@ class ScopeOrder
     public static function handle(Builder|QueryBuilder $builder, ?string $column, string $direction = 'asc'): Builder|QueryBuilder
     {
         if ($column) {
-            if(str($column)->contains('.')) {
+            if (str($column)->contains('.')) {
                 return self::sortByRelation($builder, $column, $direction);
             }
 

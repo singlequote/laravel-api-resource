@@ -25,15 +25,15 @@ class OrderByRule implements ValidationRule
         $relations = ApiModel::relations($model);
         $fillable = ApiModel::fillable($model);
 
-        if(str($value)->contains('.') && str($value)->substrCount('.') > 1) {
+        if (str($value)->contains('.') && str($value)->substrCount('.') > 1) {
             $fail('Only 1 nested relation is allowed on :attribute.');
         }
 
-        if(str($value)->contains('.') && ! in_array(str($value)->before('.')->value(), $relations)) {
+        if (str($value)->contains('.') && ! in_array(str($value)->before('.')->value(), $relations)) {
             $fail('Relation does not exists on :attribute.');
         }
 
-        if(! str($value)->contains('.') && ! in_array($value, [... $fillable, 'id', ... ($model->apiOrderBy ?? [])])) {
+        if (! str($value)->contains('.') && ! in_array($value, [... $fillable, 'id', ... ($model->apiOrderBy ?? [])])) {
             $fail('Column does not exists on :attribute.');
         }
     }

@@ -16,7 +16,7 @@ class ScopeWhereIn
     {
         foreach ($validated ?? [] as $column => $scope) {
 
-            if(str($column)->contains('.')) {
+            if (str($column)->contains('.')) {
                 $builder = self::handleRelation($builder, $column, $scope);
                 continue;
             }

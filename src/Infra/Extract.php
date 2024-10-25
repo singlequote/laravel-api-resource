@@ -31,15 +31,15 @@ class Extract
      */
     private static function parseValue(string $operator, string $value): string
     {
-        if(in_array($operator, ["LIKE", "NOT LIKE"])) {
+        if (in_array($operator, ["LIKE", "NOT LIKE"])) {
             return "%$value%";
         }
 
-        if($operator === "LIKE%") {
+        if ($operator === "LIKE%") {
             return "$value%";
         }
 
-        if($operator === "%LIKE") {
+        if ($operator === "%LIKE") {
             return "%$value";
         }
 

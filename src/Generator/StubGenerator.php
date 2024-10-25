@@ -17,7 +17,7 @@ class StubGenerator
      */
     public function getFilePath(string $path): string
     {
-        if(File::exists(base_path("stubs/ApiResource/$path.stub"))) {
+        if (File::exists(base_path("stubs/ApiResource/$path.stub"))) {
             return base_path("stubs/ApiResource/$path.stub");
         }
 
@@ -30,7 +30,7 @@ class StubGenerator
      */
     public function getFolderPath(string $path): string
     {
-        if(File::isDirectory(base_path("stubs/ApiResource/$path"))) {
+        if (File::isDirectory(base_path("stubs/ApiResource/$path"))) {
             return base_path("stubs/ApiResource/$path");
         }
 
@@ -43,13 +43,13 @@ class StubGenerator
      */
     public function copyDirectory(string $path, $newPath): void
     {
-        if(! File::isDirectory($newPath)) {
+        if (! File::isDirectory($newPath)) {
             File::makeDirectory(path: $newPath, recursive: true);
         }
 
         $files = File::allFiles(__DIR__ . "/../Template/$path");
 
-        foreach($files as $file) {
+        foreach ($files as $file) {
 
             $templatePath = str($file->getPathname())->after('../Template/')->before('.stub')->value();
 

@@ -23,15 +23,15 @@ class ScopeHas
     {
 
         foreach ($validated ?? [] as $scope => $closure) {
-            if(is_int($scope)) {
+            if (is_int($scope)) {
                 $builder->has($closure);
             }
 
-            if(is_string($scope) && $closure instanceof Closure) {
+            if (is_string($scope) && $closure instanceof Closure) {
                 $builder->whereHas($scope, $closure);
             }
 
-            if(is_string($scope) && is_array($closure)) {
+            if (is_string($scope) && is_array($closure)) {
                 $builder->whereHas($scope, function (Builder $query) use ($closure) {
                     return ReExecute::handle($query, $closure);
                 });
