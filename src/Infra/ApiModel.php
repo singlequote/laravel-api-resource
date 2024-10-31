@@ -44,7 +44,7 @@ class ApiModel
      */
     public static function relations(Model $model, bool $withSubRelations = true): array
     {
-        $cacheKey = str($model::class)->prepend('relations-')->append('-wr-')->append($withSubRelations ? 'true' : 'false')->slug();
+        $cacheKey = str($model::class)->prepend('relations-')->append('-wr-')->append($withSubRelations ? 'true' : 'false')->slug()->value();
 
         return cache()->remember($cacheKey, config('laravel-api-resource.cache.relations', 3600), function () use ($model, $withSubRelations) {
 
@@ -100,7 +100,7 @@ class ApiModel
      */
     public static function fillable(Model $model, bool $withRelations = false): Collection
     {
-        $cacheKey = str($model::class)->prepend('fillables-')->append('-wr-')->append($withRelations ? 'true' : 'false')->slug();
+        $cacheKey = str($model::class)->prepend('fillables-')->append('-wr-')->append($withRelations ? 'true' : 'false')->slug()->value();
 
         return cache()->remember($cacheKey, config('laravel-api-resource.cache.fillables', 3600), function () use ($model, $withRelations) {
             $timestamps = config('laravel-api-resource.columns.default', [
