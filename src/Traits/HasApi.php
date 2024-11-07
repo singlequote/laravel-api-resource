@@ -64,8 +64,10 @@ trait HasApi
             return $this;
         }
 
-        return $this->load(ScopeWith::getRelations($request))
-            ->loadCount(ScopeWithCount::getRelations($request));
+        ScopeWith::handleModel($this, $request);
+        ScopeWithCount::handleModel($this, $request);
+
+        return $this;
     }
 
     /**

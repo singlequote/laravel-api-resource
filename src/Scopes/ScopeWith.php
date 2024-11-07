@@ -3,6 +3,7 @@
 namespace SingleQuote\LaravelApiResource\Scopes;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Foundation\Http\FormRequest;
@@ -47,6 +48,36 @@ class ScopeWith
     }
 
     /**
+     * @param Model $model
+     * @param FormRequest|Request $request
+     * @return Model
+     */
+    public static function handleModel(Model $model, FormRequest|Request $request): Model
+    {
+        $relations = self::getRelations($request);
+
+        if (count($relations) === 0) {
+            return $model;
+        }
+
+        foreach ($relations as $relation => $data) {
+            if (is_string($relation) && is_array($data)) {
+                self::parseRelationBuilderModel($model, $relation, $data);
+                continue;
+            }
+
+            if (is_string($relation) && (bool) $data === true) {
+                $model->load($relation);
+                continue;
+            }
+
+            $model->load($data);
+        }
+
+        return $model;
+    }
+
+    /**
      * @param Builder $builder
      * @param string $relation
      * @param array $data
@@ -55,6 +86,19 @@ class ScopeWith
     public static function parseRelationBuilder(Builder &$builder, string $relation, array $data): Builder
     {
         return $builder->with([$relation => function (Relation $query) use ($data) {
+            return ReExecute::handle($query, $data);
+        }]);
+    }
+
+    /**
+     * @param Model $model
+     * @param string $relation
+     * @param array $data
+     * @return Model
+     */
+    public static function parseRelationBuilderModel(Model &$model, string $relation, array $data): Model
+    {
+        return $model->load([$relation => function (Relation $query) use ($data) {
             return ReExecute::handle($query, $data);
         }]);
     }

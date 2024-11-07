@@ -3,6 +3,7 @@
 namespace SingleQuote\LaravelApiResource\Service;
 
 use SingleQuote\LaravelApiResource\Infra\ApiModel;
+use SingleQuote\LaravelApiResource\Rules\FillableRule;
 use SingleQuote\LaravelApiResource\Rules\MixedRule;
 use SingleQuote\LaravelApiResource\Rules\OrderByRule;
 
@@ -37,10 +38,10 @@ class ApiRequestService
             'whereNotIn.*' => 'required|array',
             // Set whereNotNull
             'whereNull' => 'nullable|array',
-            'whereNull.*' => 'required|string|in:'.$fillables,
+            'whereNull.*' => ['required', 'string', new FillableRule($fillables)],
             // Set whereNotNull
             'whereNotNull' => 'nullable|array',
-            'whereNotNull.*' => 'required|string|in:'.$fillables,
+            'whereNotNull.*' => ['required', 'string', new FillableRule($fillables)],
             // Set Has
             'has' => 'nullable',
             'has.*' => 'required',
