@@ -49,6 +49,7 @@ class ScopeSelect
             return "$table.$fillable";
         })
         ->merge($timestamps)
+        ->unique()
         ->toArray();
 
         return $builder->select($filtered);
