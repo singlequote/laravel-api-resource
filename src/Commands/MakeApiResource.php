@@ -461,8 +461,8 @@ class MakeApiResource extends Command
                 continue;
             }
 
-            $prefix = $this->getConfig('namespaces.translations');
-            $slugged = str($this->config->modelName)->lower()->plural()->snake()->replace('_', '-');
+            $prefix = str($this->getConfig('namespaces.translations'))->lower();
+            $slugged = str($this->config->modelName)->snake()->lower()->plural()->replace('_', '-');
             $translateKeyName = str($fillable)->ucfirst()->replace(['-', '_'], ' ');
             $key = str("$prefix$slugged.$translateKeyName")->ltrim('.');
 
