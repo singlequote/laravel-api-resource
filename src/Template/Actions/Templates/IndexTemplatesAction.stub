@@ -37,7 +37,7 @@ final class Index<modelPlural>Action extends Action
     private function loadAdditionals(Index<modelName>Request $request, Builder &$query): Builder
     {
         if (!$request->hasAny(['orderBy', 'orderByDesc'])) {
-            return $query->orderBy('id');
+            return $query->orderBy('created_at');
         }
 
         return $query;
