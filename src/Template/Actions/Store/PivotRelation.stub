@@ -1,0 +1,12 @@
+
+    /**
+     * @param Store<modelName>Request $request
+     * @param <modelName> $<modelLower>
+     * @return void
+     */
+    public function sync<ucRelation>(Store<modelName>Request $request, <modelName> $<modelLower>): void
+    {
+        foreach($request->validated('<relation>', []) as $<relation>){
+            $<modelLower>-><relation>()->attach($<relation>['id'], collect($<relation>)->filter(fn($k, $i) => $i !== 'id')->toArray());
+        }
+    }

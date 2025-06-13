@@ -1,0 +1,20 @@
+
+    /**
+     * @param Store<modelName>Request $request
+     * @param <modelName> $<modelLower>
+     * @param array $keep
+     * @return void
+     */
+    private function sync<ucRelation>(Update<modelName>Request $request, <modelName> $<modelLower>, array $keep = []): void
+    {        
+        foreach($request->validated('<relation>', []) as $<relation>){
+            $new<ucRelation> = $<modelLower>-><relation>()->updateOrCreate(
+                ['id' => $<relation>['id'] ?? null],
+                $<relation>,
+            );
+
+            $keep[] = $new<ucRelation>->id;
+        }
+
+        $<modelLower>-><relation>()->whereNotIn('id', $keep)->each(fn ($r) => $r->delete());        
+    }

@@ -21,6 +21,10 @@ final class Update<modelName>Action extends Action
     {
         $<modelLower>->update($request->validated());
        
+        <callableRelation>
+        
         return $this->withData(new <modelName>Resource($<modelLower>))->result();
     }
+    
+    <syncRelationMethods>
 }

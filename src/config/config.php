@@ -42,7 +42,7 @@ return [
    */
     'exclude' => [
         'resources' => [],
-        
+
         'requests' => [
             'id',
             'created_at',

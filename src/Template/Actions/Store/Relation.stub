@@ -1,0 +1,14 @@
+
+    /**
+     * @param Store<modelName>Request $request
+     * @param <modelName> $<modelLower>
+     * @return void
+     */
+    private function sync<ucRelation>(Store<modelName>Request $request, <modelName> $<modelLower>): void
+    {
+        foreach($request->validated('<relation>', []) as $<relation>){
+            $<modelLower>-><relation>()->create([
+                ... $<relation>,
+            ]);
+        }
+    }

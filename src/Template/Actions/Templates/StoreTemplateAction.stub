@@ -20,6 +20,10 @@ final class Store<modelName>Action extends Action
     {
         $<modelLower> = <modelName>::create($request->validated());
        
+        <callableRelation>
+        
         return $this->withData(new <modelName>Resource($<modelLower>))->result();
     }
+    
+    <syncRelationMethods>
 }
