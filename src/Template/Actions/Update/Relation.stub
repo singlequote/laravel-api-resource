@@ -7,7 +7,7 @@
      */
     private function sync<ucRelation>(Update<modelName>Request $request, <modelName> $<modelLower>, array $keep = []): void
     {     
-        if(!$request->has('<relation>')){
+        if($request->missing('<relation>')){
             return;
         }
 
