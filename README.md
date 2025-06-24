@@ -1,11 +1,18 @@
 
-# Laravel API Resources made simple
+# Laravel API Resources
+A practical Laravel package designed to streamline API development by automating resource generation and providing a powerful, out-of-the-box filtering system.
 
-This package helps developers efficiently manage resource transformations, handle relationships, and customize resource attributes, ensuring a clean and maintainable API development workflow. Whether you're building a new API or maintaining an existing one, laravel-api-resource enhances your ability to deliver robust and compliant JSON responses with minimal effort. 
+This package accelerates your workflow with a php artisan api:resource command that intelligently generates API resource classes from your existing models. It handles the boilerplate by automatically mapping your model's attributes and relationships, providing a clean foundation for your API's data transformation layer.
 
-This package generates a complete api set for your model. From controller to action to request to resource. All you have to do is edit the form requests. 
+Beyond generation, this package equips your API endpoints with a comprehensive set of filters from the moment you install it. This allows for immediate and fine-grained control over your API's output without requiring any initial setup, enabling you to sort, search, and filter resources with ease.
 
-> Version > 2.1 adds the ability to pass additional attributes to the `relation` and `has`  method. See [the with method](https://github.com/singlequote/laravel-api-resource?tab=readme-ov-file#with). 
+It's a straightforward tool built to save you time and effort on common, repetitive tasks in API development.
+Features
+* Generate API resources for one or multiple models at once.
+* Automatically populates the resource with the model's database columns.
+* Auto include parent relationships in your resource and requests.
+* Auto include child relationships in your resource, requests and actions.
+* Automatically adds JsonResource and the Request import.
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/singlequote/laravel-api-resource.svg?style=flat-square)](https://packagist.org/packages/singlequote/laravel-api-resource)
 [![Total Downloads](https://img.shields.io/packagist/dt/singlequote/laravel-api-resource.svg?style=flat-square)](https://packagist.org/packages/singlequote/laravel-api-resource)
