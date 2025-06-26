@@ -481,7 +481,7 @@ class MakeApiResource extends Command
             '$relation' => ['nullable', 'array'],\r{$this->getFillablesForRequestUsingPivot($requiredLabel, $object, "$relation.*")}
                 ");
             } else {
-                /** @var \Illuminate\Database\Eloquent\Relations\HasMany $object */                
+                /** @var \Illuminate\Database\Eloquent\Relations\HasMany $object */
                 $content = $content->append("
             '$relation' => ['nullable', 'array'],{$this->getFillablesForRequest($requiredLabel, $object->getModel(), "$relation.*", [$object->getForeignKeyName()])}
                 ");
@@ -500,8 +500,8 @@ class MakeApiResource extends Command
     private function getFillablesForRequest(string $requiredLabel = 'required', ?Model $model = null, ?string $keyPrefix = null, array $ignore = []): string
     {
         $useModel = $model ?? $this->config->model;
-        $fillables = ApiModel::fillable($useModel);        
-        
+        $fillables = ApiModel::fillable($useModel);
+
         $pdoColumns = $this->getPDOColumns($useModel);
 
         $content = str('');
