@@ -65,10 +65,10 @@ class MakeApiResource extends Command
             return 0;
         }
 
-        $this->copyController();
-        $this->copyActions();
+//        $this->copyController();
+//        $this->copyActions();
         $this->copyRequests();
-        $this->copyResource();
+//        $this->copyResource();
 
         $this->info('Api resource created...');
     }
@@ -481,8 +481,9 @@ class MakeApiResource extends Command
             '$relation' => ['nullable', 'array'],\r{$this->getFillablesForRequestUsingPivot($requiredLabel, $object, "$relation.*")}
                 ");
             } else {
+                /** @var \Illuminate\Database\Eloquent\Relations\HasMany $object */                
                 $content = $content->append("
-            '$relation' => ['nullable', 'array'],{$this->getFillablesForRequest($requiredLabel, $object->getModel(), "$relation.*")}
+            '$relation' => ['nullable', 'array'],{$this->getFillablesForRequest($requiredLabel, $object->getModel(), "$relation.*", [$object->getForeignKeyName()])}
                 ");
             }
         }
@@ -496,11 +497,11 @@ class MakeApiResource extends Command
      * @param string|null $keyPrefix
      * @return string
      */
-    private function getFillablesForRequest(string $requiredLabel = 'required', ?Model $model = null, ?string $keyPrefix = null): string
+    private function getFillablesForRequest(string $requiredLabel = 'required', ?Model $model = null, ?string $keyPrefix = null, array $ignore = []): string
     {
         $useModel = $model ?? $this->config->model;
-        $fillables = ApiModel::fillable($useModel);
-
+        $fillables = ApiModel::fillable($useModel);        
+        
         $pdoColumns = $this->getPDOColumns($useModel);
 
         $content = str('');
@@ -508,7 +509,7 @@ class MakeApiResource extends Command
         foreach ($fillables as $fillable) {
             $keyName = $keyPrefix ? "$keyPrefix.$fillable" : $fillable;
 
-            if (in_array($fillable, config('laravel-api-resource.exclude.requests', [])) || $useModel->getKeyName() === $fillable) {
+            if (in_array($fillable, [... config('laravel-api-resource.exclude.requests', []), ... $ignore]) || $useModel->getKeyName() === $fillable) {
                 continue;
             }
 
