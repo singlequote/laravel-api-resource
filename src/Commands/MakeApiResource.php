@@ -1,4 +1,5 @@
 <?php
+
 namespace SingleQuote\LaravelApiResource\Commands;
 
 use Illuminate\Console\Command;
@@ -12,6 +13,7 @@ use SingleQuote\LaravelApiResource\Infra\ApiModel;
 use SingleQuote\LaravelApiResource\Traits\HasApi;
 use Symfony\Component\Finder\SplFileInfo;
 use Throwable;
+
 use function base_path;
 use function class_uses_recursive;
 use function collect;
@@ -20,7 +22,6 @@ use function str;
 
 class MakeApiResource extends Command
 {
-
     /**
      * The name and signature of the console command.
      *
@@ -48,8 +49,7 @@ class MakeApiResource extends Command
 
     public function __construct(
         protected StubGenerator $stubGenerator
-    )
-    {
+    ) {
         parent::__construct();
     }
 
@@ -312,7 +312,7 @@ class MakeApiResource extends Command
     {
         $relations = ApiModel::relations($this->config->model, false);
 
-        $content = str('');        
+        $content = str('');
 
         foreach ($relations as $relation) {
 
@@ -325,9 +325,9 @@ class MakeApiResource extends Command
             } catch (\Throwable $ex) {
                 continue;
             }
-            
+
             $namespace = $this->getRelatedResource($object, $relation, $this->hasOption('module'));
-            
+
             if (!$namespace) {
                 continue;
             }
@@ -343,7 +343,7 @@ class MakeApiResource extends Command
 
         return $content;
     }
-    
+
     /**
      * @param Relation $object
      * @param string $relation
@@ -353,7 +353,7 @@ class MakeApiResource extends Command
     private function getRelatedResource(Relation $object, string $relation, bool $tryWithinModule = true): ?string
     {
         $files = $this->tryLocateFiles($tryWithinModule);
-        
+
         $model = get_class($object->getModel());
 
         $related = collect($files)->filter(function ($file) use ($model) {
@@ -361,11 +361,11 @@ class MakeApiResource extends Command
 
             return $namespace && str($file->getFilename())->contains(str($model)->afterLast('\\')->append('Resource'));
         });
-        
-        if($tryWithinModule && $related->isEmpty()){
+
+        if ($tryWithinModule && $related->isEmpty()) {
             return $this->getRelatedResource($object, $relation, false);
         }
-        
+
         if ($related->isEmpty()) {
             return null;
         }
@@ -377,7 +377,7 @@ class MakeApiResource extends Command
         } else {
             return $this->extractNamespace($related->first());
         }
-        
+
         return null;
     }
 
