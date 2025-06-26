@@ -1,5 +1,4 @@
 <?php
-
 namespace SingleQuote\LaravelApiResource\Commands;
 
 use Illuminate\Console\Command;
@@ -13,7 +12,6 @@ use SingleQuote\LaravelApiResource\Infra\ApiModel;
 use SingleQuote\LaravelApiResource\Traits\HasApi;
 use Symfony\Component\Finder\SplFileInfo;
 use Throwable;
-
 use function base_path;
 use function class_uses_recursive;
 use function collect;
@@ -22,6 +20,7 @@ use function str;
 
 class MakeApiResource extends Command
 {
+
     /**
      * The name and signature of the console command.
      *
@@ -35,7 +34,6 @@ class MakeApiResource extends Command
      * @var string
      */
     protected $description = 'Create new Api resource';
-
     protected array $relationTypes = [
         'HasMany',
         'BelongsToMany',
@@ -50,7 +48,8 @@ class MakeApiResource extends Command
 
     public function __construct(
         protected StubGenerator $stubGenerator
-    ) {
+    )
+    {
         parent::__construct();
     }
 
@@ -313,12 +312,9 @@ class MakeApiResource extends Command
     {
         $relations = ApiModel::relations($this->config->model, false);
 
-        $content = str('');
-
-        $files = File::allFiles($this->getConfig('namespaces.resources', null, false));
+        $content = str('');        
 
         foreach ($relations as $relation) {
-
 
             if (in_array($relation, config('laravel-api-resource.exclude.resources', []))) {
                 continue;
@@ -329,32 +325,14 @@ class MakeApiResource extends Command
             } catch (\Throwable $ex) {
                 continue;
             }
-
-            $model = get_class($object->getModel());
-
-            $related = collect($files)->filter(function ($file) use ($model) {
-                $namespace = $this->extractNamespace($file);
-
-                return $namespace && str($file->getFilename())->contains(str($model)->afterLast('\\')->append('Resource'));
-            });
-
-            if ($related->isEmpty()) {
-                continue;
-            }
-
-            if ($related->count() > 1) {
-                $relatedFile = $this->choice("Multiple resources found, please select correct resource for $relation", $related->values()->toArray());
-
-                $namespace = str($relatedFile)->before('.php')->value();
-            } else {
-                $namespace = $this->extractNamespace($related->first());
-            }
-
+            
+            $namespace = $this->getRelatedResource($object, $relation, $this->hasOption('module'));
+            
             if (!$namespace) {
                 continue;
             }
 
-            if (str($this->getClassName($relation))->startsWith(['HasOne', 'MorphOne', 'MorphTo', 'BelongsTo']) || $this->getClassName($relation) === 'BelongsTo') {
+            if (str($this->getClassName($relation))->startsWith(['HasOne', 'MorphOne', 'MorphTo', 'BelongsTo']) && $this->getClassName($relation) !== 'BelongsToMany') {
                 $type = "new \\$namespace";
             } else {
                 $type = "\\$namespace::collection";
@@ -364,6 +342,60 @@ class MakeApiResource extends Command
         }
 
         return $content;
+    }
+    
+    /**
+     * @param Relation $object
+     * @param string $relation
+     * @param bool $tryWithinModule
+     * @return string|null
+     */
+    private function getRelatedResource(Relation $object, string $relation, bool $tryWithinModule = true): ?string
+    {
+        $files = $this->tryLocateFiles($tryWithinModule);
+        
+        $model = get_class($object->getModel());
+
+        $related = collect($files)->filter(function ($file) use ($model) {
+            $namespace = $this->extractNamespace($file);
+
+            return $namespace && str($file->getFilename())->contains(str($model)->afterLast('\\')->append('Resource'));
+        });
+        
+        if($tryWithinModule && $related->isEmpty()){
+            return $this->getRelatedResource($object, $relation, false);
+        }
+        
+        if ($related->isEmpty()) {
+            return null;
+        }
+
+        if ($related->count() > 1) {
+            $relatedFile = $this->choice("Multiple resources found, please select correct resource for $relation", $related->values()->toArray());
+
+            return str($relatedFile)->before('.php')->value();
+        } else {
+            return $this->extractNamespace($related->first());
+        }
+        
+        return null;
+    }
+
+    /**
+     * @param bool $onlyModule
+     * @return Collection
+     */
+    private function tryLocateFiles(bool $onlyModule = false): Collection
+    {
+        if ($onlyModule && $this->hasOption('module')) {
+            $files = collect(File::allFiles($this->getConfig('namespaces.resources', null, true)));
+
+            if ($files->isNotEmpty()) {
+                return $files;
+            }
+        }
+
+        return collect(File::allFiles($this->getConfig('namespaces.resources', null, false)));
     }
 
     /**
