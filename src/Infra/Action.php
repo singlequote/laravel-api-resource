@@ -203,10 +203,13 @@ class Action
             ->with('failed', $this->errorMessage);
     }
 
+    /**
+     * @return mixed
+     */
     private function success(): mixed
     {
         if (isset($this->onSuccessClosureCallback)) {
-            ($this->onSuccessClosureCallback)(...$this->data ?? []);
+            return ($this->onSuccessClosureCallback)(...$this->data ?? []);
         }
 
         if ($this->onSuccess instanceof Closure) {
