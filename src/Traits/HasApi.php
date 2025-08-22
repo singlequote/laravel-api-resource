@@ -35,7 +35,6 @@ trait HasApi
     public function scopeApiDefaults(Builder $builder, FormRequest $request): Builder|QueryBuilder
     {
         ScopeWith::handle($builder, $request);
-        ScopeWithCount::handle($builder, $request);
         ScopeWhere::handle($builder, $request->validated('where', []));
         ScopeWhere::handle($builder, $request->validated('orWhere', []), 'or');
         ScopeHas::handle($builder, $request->validated('has', []));
@@ -47,6 +46,7 @@ trait HasApi
         ScopeWhereRelation::handle($builder, $request->validated('whereRelation', []));
         ScopeSearch::handle($builder, $request->validated('search', []));
         ScopeSelect::handle($builder, $request->validated('select', []));
+        ScopeWithCount::handle($builder, $request);
         ScopeOrder::handle($builder, $request->validated('orderBy'));
         ScopeOrder::handle($builder, $request->validated('orderByDesc'), 'desc');
         ScopeTrashed::handle($builder, $request);
