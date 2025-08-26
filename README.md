@@ -1,429 +1,348 @@
-
-# Laravel API Resources
-A practical Laravel package designed to streamline API development by automating resource generation and providing a powerful, out-of-the-box filtering system.
-
-This package accelerates your workflow with a php artisan api:resource command that intelligently generates API resource classes from your existing models. It handles the boilerplate by automatically mapping your model's attributes and relationships, providing a clean foundation for your API's data transformation layer.
-
-Beyond generation, this package equips your API endpoints with a comprehensive set of filters from the moment you install it. This allows for immediate and fine-grained control over your API's output without requiring any initial setup, enabling you to sort, search, and filter resources with ease.
-
-It's a straightforward tool built to save you time and effort on common, repetitive tasks in API development.
-Features
-* Generate API resources for one or multiple models at once.
-* Automatically populates the resource with the model's database columns.
-* Auto include parent relationships in your resource and requests.
-* Auto include child relationships in your resource, requests and actions.
-* Automatically adds JsonResource and the Request import.
+# Laravel API Resource
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/singlequote/laravel-api-resource.svg?style=flat-square)](https://packagist.org/packages/singlequote/laravel-api-resource)
 [![Total Downloads](https://img.shields.io/packagist/dt/singlequote/laravel-api-resource.svg?style=flat-square)](https://packagist.org/packages/singlequote/laravel-api-resource)
 
-## Installation
+A practical Laravel package designed to streamline API development by automating resource generation and providing a powerful, out-of-the-box filtering system.
+
+This package accelerates your workflow with two core features:
+1.  **Rapid Scaffolding**: Use the `php artisan make:api-resource` command to intelligently generate a full set of API files (Controller, Actions, Requests, and Resource) from your existing models.
+2.  **Powerful Filtering**: Equip your API endpoints with a comprehensive set of filters from the moment you install it. Sort, search, and filter resources with ease without any initial setup.
+
+---
+
+## Table of Contents
+
+- [Installation & Setup](#installation--setup)
+- [Usage](#usage)
+  - [1. Generating a Full API Resource](#1-generating-a-full-api-resource)
+  - [2. Using the API Filters](#2-using-the-api-filters)
+  - [3. Customizing the Resource Response](#3-customizing-the-resource-response)
+- [API Filtering Reference](#api-filtering-reference)
+  - [limit](#limit)
+  - [search](#search)
+  - [where](#where)
+  - [whereIn / whereNotIn](#wherein--wherenotin)
+  - [whereNull / whereNotNull](#wherenull--wherenotnull)
+  - [has / doesntHave](#has--doesnothave)
+  - [whereRelation](#whererelation)
+  - [with](#with)
+  - [withCount](#withcount)
+  - [select](#select)
+  - [orderBy / orderByDesc](#orderby--orderbydesc)
+  - [Custom Orderable Columns](#custom-orderable-columns)
+- [Contributing](#contributing)
+- [Postcardware](#postcardware)
+- [Credits](#credits)
+- [License](#license)
+
+---
+
+## Installation & Setup
+
+**1. Install the package via Composer:**
 
 ```bash
 composer require singlequote/laravel-api-resource
 ```
 
-## Publish files
-Publish the config
+**2. (Optional) Publish Files:**
+
+You can publish the configuration and stub files to customize the package's behavior and generated file templates.
+
+Publish the config file:
 ```bash
 php artisan vendor:publish --tag=laravel-api-resource-config
 ```
-Publish stub files
+
+Publish the stub files:
 ```bash
 php artisan vendor:publish --tag=laravel-api-resource-stubs
 ```
 
-## API Resource Generation
+---
 
-```bash
-php artisan make:api-resource {model}
-```
+## Usage
 
-With the command above, you can generate a complete set for your API resources including the API controller, actions, requests, and an API resource.
+### 1. Generating a Full API Resource
 
-For example, if we would want to generate an API resource for our `User` model.
+Use the `make:api-resource` Artisan command to generate all the necessary files for a model's API endpoint.
 
 ```bash
 php artisan make:api-resource User
 ```
 
-The following files will be created:
+This single command creates the following file structure, ready for you to add your business logic:
 
 ```plaintext
 App/Http/Controllers
-    - ApiUserController
+└── Api/UserController.php
 
 App/Actions/Users
-    - DeleteUserAction
-    - IndexUsersAction
-    - ShowUserAction
-    - StoreUserAction
-    - UpdateUserAction
+├── DeleteUserAction.php
+├── IndexUserAction.php
+├── ShowUserAction.php
+├── StoreUserAction.php
+└── UpdateUserAction.php
 
 App/Http/Requests/Users
-    - IndexUserRequest
-    - ShowUserRequest
-    - StoreUserRequest
-    - UpdateUserRequest
+├── IndexUserRequest.php
+├── ShowUserRequest.php
+├── StoreUserRequest.php
+└── UpdateUserRequest.php
 
 App/Http/Resources
-    - UserResource
-```
-After the generation is completed you can add your api resource route to your `api.php` route file.
-```php
-/*
-  |--------------------------------------------------------------------------
-  | User routes
-  |--------------------------------------------------------------------------
- */
-Route::apiResource('users', UserController::class)->only('index', 'store', 'show', 'update', 'destroy');
-```
-## Resource methods
-The package comes with default methods that can be used to quickly setup your api. For instance the policy service can be used to add policies to your resource response.
-```php
-   use SingleQuote\LaravelApiResource\Service\ApiPolicyService;
-
-    public function toArray(Request $request): array
-    {
-        return [
-            // ...
-            'policies' => ApiPolicyService::defaults($this->resource),
-        ];
-    }
+└── UserResource.php
 ```
 
-In addition you can pass additional policy methods as a second parameter.
+Finally, add the generated route to your `routes/api.php` file:
 
 ```php
-'policies' => ApiPolicyService::defaults($this->resource, ['sendInvite', 'acceptInvite']),
+use App\Http\Controllers\Api\UserController;
+
+Route::apiResource('users', UserController::class);
 ```
 
-## Api methods
-The package comes with default api options. To use the provided helpers, add the `HasApi` trait to your models. 
-In the code previews below we use a package named [Ziggy](https://github.com/tighten/ziggy) to parse the url. If you don't use any javascript libraries to build your url you have to manual build the url according to the previews below.
-For example: 
+### 2. Using the API Filters
+
+To enable the powerful filtering capabilities, simply add the `HasApi` trait to your model.
+
+```php
+use Illuminate\Database\Eloquent\Model;
+use SingleQuote\LaravelApiResource\Traits\HasApi;
+
+class User extends Model
+{
+    use HasApi;
+    
+    // ...
+}
+```
+
+You can now use a wide range of query parameters to filter your API results directly from the URL. See the [API Filtering Reference](#api-filtering-reference) below for a full list of available methods.
+
+### 3. Customizing the Resource Response
+
+The package provides helpers to easily customize your JSON response. For instance, you can use the `ApiPolicyService` to automatically include the results of your model's policies.
+
+In your `UserResource.php`:
+
+```php
+use SingleQuote\LaravelApiResource\Service\ApiPolicyService;
+use Illuminate\Http\Request;
+
+public function toArray(Request $request): array
+{
+    return [
+        'id' => $this->id,
+        'name' => $this->name,
+        // ...
+        'policies' => ApiPolicyService::defaults($this->resource, ['sendInvite']),
+    ];
+}
+```
+
+---
+
+## API Filtering Reference
+
+All examples use the [Ziggy](https://github.com/tighten/ziggy) package for clean URL generation. A manual URL example is provided for reference.
+
+| Helper | Value Type | Description |
+| :--- | :--- | :--- |
+| `limit` | `number` | Sets the number of results per page. |
+| `search`| `array` | Searches specified columns for a query. |
+| `where`| `array` | Adds a "where" clause to the query. |
+| `orWhere`| `array` | Adds an "or where" clause. |
+| `whereIn` | `array` | Filters by a column's value within an array. |
+| `whereNotIn` | `array` | Filters by a column's value not in an array. |
+| `whereNull` | `string` | Finds records where a column is NULL. |
+| `whereNotNull` | `string` | Finds records where a column is not NULL. |
+| `has` | `array` | Filters based on the existence of a relationship. |
+| `doesntHave` | `array` | Filters based on the absence of a relationship. |
+| `whereRelation` | `array` | Queries a relationship with a `where` condition. |
+| `with` | `array`| Eager loads relationships. |
+| `withCount` | `array`| Counts the results of a given relationship. |
+| `select` | `array` | Selects specific columns to return. |
+| `orderBy` | `string` | Sorts the results in ascending order. |
+| `orderByDesc` | `string` | Sorts the results in descending order. |
+
+### limit
+
+The default limit is `1000`. You can change this in the config file or override it per request.
+
 ```javascript
-// using the Ziggy package
+axios.get(route('api.users.index', { limit: 100 }));
+// GET /api/users?limit=100
+```
+
+### search
+
+Search for a query within specified columns. Use `*` to search all fillable columns.
+
+```javascript
 axios.get(route('api.users.index', {
-	limit : 100
-}))
-```
-will look like
-```
-GET: <your_site_url>/api/users?limit=100
-```
-Manual
-```javascript
-axios.get('/api/users?limit=100')
-```
-
-| helper | value |
-|:--------:| -------------:|
-| limit | number |
-| search| array |
-| where| array |
-| orWhere| array |
-| whereIn | array |
-| whereNotIn | array |
-| whereNull | string |
-| whereNotNull | string |
-| has | array |
-| doesntHave | array |
-| whereRelation | array |
-| with | array|
-| select | array |
-| orderBy | string |
-| orderByDesc | string |
-
-## limit
-The default limit provided by the package is set to `1000` results per page. You can change the default in the `laravel-api-resource` config file. To change the limit for a single request you can use the `limit` helper.
-```javascript
-axios.get(route('api.users.index', {
-    limit : 100
-}))
-```
-
-## search
-A search helper is available if you want to create a search input.  The search field accepts an array with 2 required fields. The field and query. The fields are the columns the api should search in. The query is the query used to search in the columns. 
-```javascript
-axios.get(route('api.users.index', {
-	search: {
+    search: {
         fields: ['name', 'email'],
         query: "john"
     }
-}))
-// /api/users?search[fields][0]=name&search[fields][1]=email&search[query]=john
-```
-If you want to search all fillable columns within your model you can use the wildcard `*` as your searchfield
-```javascript
-axios.get(route('api.users.index', {
-	search: {
-        fields: ['*'], // search in all fillable columns
-        query: "john"
-    }
-}))
-// /api/users?search[fields][0]=*&search[query]=john
+}));
+// GET /api/users?search[fields][0]=name&search[fields][1]=email&search[query]=john
 ```
 
+### where
 
-## where
-You may use the query builder's `where` method to add "where" clauses to the query. The most basic call to the `where` method requires 2 arguments. The first argument is the name of the column. The second argument is the value to compare against the column's value.
-```javascript
-axios.get(route('api.users.index', {
-     where: {
-        first_name: "john"
-    }
-}))
-// /api/users?where[first_name]=john
-```
-You may also pass an additional operator to retrieve data for example, get all users younger than a certain date
-```javascript
-axios.get(route('api.users.index', {
-     where: {
-        date_of_birth: {
-           gt: "1995-01-31"
-        } 
-    }
-}))
-// /api/users?where[date_of_birth][gt]=1995-01-31
-```
-**Digging Deeper**
+Add "where" clauses. You can also provide an operator (`gt`, `lt`, `sw`, etc.).
 
-If you want to filter multiple times on the same column, you can change the `where` object to an array and add the `where` statements as array objects. 
-
-Below we will retrieve all users that were created on a specific day
-```javascript
-axios.get(route('api.users.index', {
-     where: [
-	      {
-	          created_at: {
-	              lte: "1995-01-31 23:59"
-	          }
-	      }, {
-	          created_at: {
-	              gte: "1995-01-31 00:00"
-	          }
-	      }
-	  ],
-}))
-// /api/users?where[0][date_of_birth][lte]=1995-01-31 23:59&where[1][date_of_birth][gte]=1995-01-31 00:00
-```
-
-**Available operators**
 | Operator | Shorthand |
-|:--------:| -------------:|
-| startsWith | sw |
-| endsWith| ew |
-| notContains| nin |
-| contains| in |
-| equals | eq |
-| notEqual | neq |
-| greater | gt |
-| greaterEquals | gte |
-| lesser | lt |
-| lesserEquals | lte |
+| :--- | :--- |
+| startsWith | `sw` |
+| endsWith| `ew` |
+| notContains| `nin` |
+| contains| `in` |
+| equals | `eq` |
+| notEqual | `neq` |
+| greater | `gt` |
+| greaterEquals | `gte` |
+| lesser | `lt` |
+| lesserEquals | `lte` |
 
-
-## whereIn
-The `whereIn` method verifies that a given column's value is contained within the given array:
 ```javascript
 axios.get(route('api.users.index', {
-	whereIn: {
-        role: ['admin', 'employee']
+    where: {
+        date_of_birth: { gt: "1995-01-31" }
     }
-}))
-// /api/users?whereIn[role][0]=admin&whereIn[role][1]=employee
-```
-## whereNotIn
-The `whereNotIn` method verifies that the given column's value is not contained in the given array
-```javascript
-axios.get(route('api.users.index', {
-	whereNotIn: {
-        role: ['quests', 'visitors']
-    }
-}))
-// /api/users?whereNotIn[role][0]=quests&whereNotIn[role][1]=visitors
-```
-## whereNull
-The `whereNull` method verifies that the given column's value is `NULL`
-```javascript
-axios.get(route('api.users.index', {
-    whereNull: "email_verified_at"
-}))
-// /api/users?whereNull[0]=email_verified_at
-```
-## whereNotNull
-The `whereNotNull` method verifies that the given column's value is not `NULL`
-```javascript
-axios.get(route('api.users.index', {
-    whereNotNull: "password"
-}))
-// /api/users?whereNotNull[0]=password
-```
-## has
-When retrieving model records, you may wish to limit your results based on the existence of a relationship. For example, imagine you want to retrieve all users that have at least one role.
-```javascript
-axios.get(route('api.users.index', {
-    has:  ['roles']
-}))
-// /api/users?has[0]=roles
+}));
+// GET /api/users?where[date_of_birth][gt]=1995-01-31
 ```
 
-**Digging deeper**
+### whereIn / whereNotIn
 
-You can add additional parameters to the `has` object. For example, if you would like to get all users that with certain roles.
+Verifies that a column's value is (or is not) within a given array.
+
+```javascript
+axios.get(route('api.users.index', {
+    whereIn: { role: ['admin', 'employee'] }
+}));
+// GET /api/users?whereIn[role][0]=admin&whereIn[role][1]=employee
+```
+
+### whereNull / whereNotNull
+
+Verifies that a column's value is `NULL` or not `NULL`.
+
+```javascript
+axios.get(route('api.users.index', { whereNull: "email_verified_at" }));
+// GET /api/users?whereNull=email_verified_at
+```
+
+### has / doesntHave
+
+Limit results based on the existence of a relationship. You can also add nested conditions.
+
 ```javascript
 axios.get(route('api.users.index', {
     has: {
-	roles: {
-            whereIn: {
-                id: [1, 2]
-            }
-	}
-    }
-}))
-// /api/users?has[roles][whereIn][id][0]=1&has[roles][whereIn][id][1]=2
-```
-
-## doesntHave
-When retrieving model records, you may wish to limit your results based on the existence of a relationship. For example, imagine you want to retrieve all users don't have any roles attached.
-```javascript
-axios.get(route('api.users.index', {
-    doesntHave:  ['roles']
-}))
-// /api/users?doesntHave[0]=roles
-```
-## whereRelation
-If you would like to query for a relationship's existence with a single, simple where condition attached to the relationship query.
-```javascript
-axios.get(route('api.users.index', {
-    whereRelation:  {
         roles: {
-            name: 'admin',
+            whereIn: { id: [1, 2] }
         }
     }
-}))
-// /api/users?whereRelation[roles][name]=admin
+}));
+// GET /api/users?has[roles][whereIn][id][0]=1&has[roles][whereIn][id][1]=2
 ```
 
-You may also pass an additional operator to retrieve data for example, get all users where the role was created after a certain date.
+### whereRelation
+
+Query for a relationship's existence with a simple `where` condition.
+
 ```javascript
 axios.get(route('api.users.index', {
-    whereRelation:  {
+    whereRelation: {
+        roles: { name: 'admin' }
+    }
+}));
+// GET /api/users?whereRelation[roles][name]=admin
+```
+
+### with
+
+Eager load relationships to avoid N+1 query problems.
+
+```javascript
+axios.get(route('api.users.index', {
+    with: {
         roles: {
-            created_at: {
-                gt: "2024-01-01",
-            },
+            select: ['id', 'name']
         }
     }
-}))
-// /api/users?whereRelation[roles][created_at][gt]=2024-01-01
+}));
+// GET /api/users?with[roles][select][0]=id&with[roles][select][1]=name
 ```
 
+### withCount
 
+Count the number of results from a relationship without loading them.
 
-## with
-Sometimes you may need to eager load several different relationships. To do so, just pass an array of relationships to the `with` method
 ```javascript
-axios.get(route('api.users.index', {
-    with: ['roles']
-}))
-// /api/users?with[0]=roles
+axios.get(route('api.users.index', { withCount: ['posts'] }));
+// GET /api/users?withCount[0]=posts
 ```
-**Using `with` on sub relations**
-When you want to retrieve a relation containing other relations you can set a property on each model. This allows you to allow certain models to accept multiple depths
-Add the property `$apiRelations` to your model.
+
+**Note:** To include the count in your response, you must manually add the `posts_count` attribute to your resource's `toArray` method.
 
 ```php
-
-class User extends Authenticatable
+// In app/Http/Resources/UserResource.php
+public function toArray(Request $request): array
 {
-    public array $apiRelations = [
-        'roles.permissions', //allows for users.roles.permissions
+    return [
+        // ... other attributes
+        'posts_count' => $this->whenCounted('posts'),
     ];
-```
-**Passing additional properties to relations**
-The `with` method also accepts a json object. This way you can pass the same methods to relations.
-For example, if you would like to retrieve only the name of the roles
-```javascript
-axios.get(route('api.users.index', {
-    with: {
-	    invitations: true,
-	    roles: {
-		    select: ['name']
-	    }
-	}
-}))
-// /api/users?with[invitations]=1&with[roles][roles][select][0][name]
-```
-Even include the permissions
-```javascript
-axios.get(route('api.users.index', {
-    with: {
-	    invitations: true,
-	    roles: {
-		    select: ['name'],
-		    with: {
-			    permissions: {
-				    select: ['name'],
-			    }
-		    }
-	    }
-	}
-}))
+}
 ```
 
-## select
-Sometimes you may only need a few columns from the resource and keep your api responses small.
+### select
+
+Specify which columns to retrieve to keep responses lean.
+
 ```javascript
-axios.get(route('api.users.index', {
-    select: ['id', 'name']
-}))
-```
-## orderBy/orderByDesc
-Sometimes you may want to change the ordering form your api response. You can use the `orderBy` or `orderByDesc` helper
-```javascript
-axios.get(route('api.users.index', {
-    orderBy: 'name'
-}))
-// /api/users?orderBy=name
-```
-**Order relations**
-```javascript
-axios.get(route('api.users.index', {
-    orderBy: 'roles.name'
-}))
-// /api/users?orderBy=roles.name
+axios.get(route('api.users.index', { select: ['id', 'name'] }));
+// GET /api/users?select[0]=id&select[1]=name
 ```
 
-## Custom orderable columns
-When using for example the `withCount` or `withSum` on your model query by default that column isn't sortable because it doesn't exists in your fillable attribute. To make the custom column sortable you can add the `$apiOrderBy` attribute to your model to make those columns sortable
+### orderBy / orderByDesc
 
-To make for example article prices sortable, add the `withSum` to your query.
+Sort the results by a given column, including columns on related models.
+
+```javascript
+axios.get(route('api.users.index', { orderBy: 'roles.name' }));
+// GET /api/users?orderBy=roles.name
+```
+
+### Custom Orderable Columns
+
+To make custom columns (e.g., from `withCount` or `withSum`) sortable, add them to the `$apiOrderBy` property on your model.
 
 ```php
-$query->withSum('articles', 'price');
-```
-
-```php
+// In your Product.php model
 class Product extends Model
 {
-    /**
-     * @var array
-     */
     public array $apiOrderBy = [
-        'articles_sum_price',
+        'articles_sum_price', // From a withSum query
     ];
+}
 ```
 
-next add the orderBy to your api request
-```url
-.../products?orderBy=articles_sum_price
-```
+Now you can sort by this custom column:
+`GET /api/products?orderBy=articles_sum_price`
+
+---
 
 ## Contributing
 
-Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+---
 
 ## Postcardware
 
@@ -431,10 +350,14 @@ You're free to use this package, but if it makes it to your production environme
 
 Our address is: Quotec, Traktieweg 8c 8304 BA, Emmeloord, Netherlands.
 
+---
+
 ## Credits
 
-- [Wim Pruiksma](https://github.com/wimurk)
-- [All Contributors](../../contributors)
+-   [Wim Pruiksma](https://github.com/wimurk)
+-   [All Contributors](../../contributors)
+
+---
 
 ## License
 
