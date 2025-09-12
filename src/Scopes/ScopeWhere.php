@@ -32,9 +32,11 @@ class ScopeWhere
 
             [$operator, $value] = Extract::operatorAndValue($scope);
 
-            if (str($column)->contains('.')) {
+            if (str($column)->contains('.') && !self::isJsonColumn($builder, $column)) {
                 $builder = self::handleRelation($builder, $boolean, $column, $scope);
                 continue;
+            }else if (str($column)->contains('.') && self::isJsonColumn($builder, $column)) {
+                $column = "{$builder->getModel()->getTable()}.".str($column)->replace('.', '->')->value();
             } else {
                 $column = "{$builder->getModel()->getTable()}.$column";
             }
@@ -68,5 +70,17 @@ class ScopeWhere
                 $foreignColumn => $scope,
             ]
         ], $boolean);
+    }
+
+    /**
+     * @param Builder|QueryBuilder $builder
+     * @param string $column
+     * @return bool
+     */
+    public static function isJsonColumn(Builder|QueryBuilder $builder, string $column): bool
+    {        
+        $fillables = \SingleQuote\LaravelApiResource\Infra\ApiModel::fillable($builder->getModel());
+        
+        return $fillables->contains(str($column)->before('.')->value());
     }
 }
