@@ -4,8 +4,8 @@ namespace SingleQuote\LaravelApiResource\Scopes;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
+use SingleQuote\LaravelApiResource\Infra\ApiModel;
 use SingleQuote\LaravelApiResource\Infra\Extract;
-
 use function str;
 
 /**
@@ -79,7 +79,7 @@ class ScopeWhere
      */
     public static function isJsonColumn(Builder|QueryBuilder $builder, string $column): bool
     {        
-        $fillables = \SingleQuote\LaravelApiResource\Infra\ApiModel::fillable($builder->getModel());
+        $fillables = ApiModel::fillable($builder->getModel());
         
         return $fillables->contains(str($column)->before('.')->value());
     }
