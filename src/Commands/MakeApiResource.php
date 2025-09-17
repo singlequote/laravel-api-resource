@@ -535,9 +535,13 @@ class MakeApiResource extends Command
         $fillables = ApiModel::fillable($useModel);
 
         $pdoColumns = $this->getPDOColumns($useModel);
-
-        $content = str('');
-
+        $relatedPdoColumn = $this->getPDOColumns($useModel->getModel())->firstWhere('name', 'id');
+        
+        $keyName = $keyPrefix ? "$keyPrefix." : "";
+        
+        $content = str("
+            '{$keyName}id' => [{$this->columnRequired($relatedPdoColumn, $requiredLabel)}, {$this->getColumnAttributes('id', $relatedPdoColumn)}],\r");
+                
         foreach ($fillables as $fillable) {
             $keyName = $keyPrefix ? "$keyPrefix.$fillable" : $fillable;
 
