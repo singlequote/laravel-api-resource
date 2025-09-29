@@ -515,7 +515,7 @@ class MakeApiResource extends Command
             } else {
                 /** @var \Illuminate\Database\Eloquent\Relations\HasMany $object */
                 $content = $content->append("
-            '$relation' => ['nullable', 'array'],{$this->getFillablesForRequest($requiredLabel, $object->getModel(), "$relation.*", [$object->getForeignKeyName()])}
+            '$relation' => ['nullable', 'array'],{$this->getFillablesForRequestRelation($requiredLabel, $object->getModel(), "$relation.*", [$object->getForeignKeyName()])}
                 ");
             }
         }
@@ -533,6 +533,44 @@ class MakeApiResource extends Command
     {
         $useModel = $model ?? $this->config->model;
         $fillables = ApiModel::fillable($useModel);
+        $pdoColumns = $this->getPDOColumns($useModel);
+        $keyName = $keyPrefix ? "$keyPrefix." : "";
+        
+        $content = str("");
+                
+        foreach ($fillables as $fillable) {
+            $keyName = $keyPrefix ? "$keyPrefix.$fillable" : $fillable;
+            
+            if (in_array($fillable, [... config('laravel-api-resource.exclude.requests', []), ... $ignore]) || $useModel->getKeyName() === $fillable) {
+                continue;
+            }
+                        
+            $pdoColumn = $pdoColumns->firstWhere('name', $fillable);
+
+            if ($pdoColumn === null) {
+                $this->error("Column $fillable does not exists within your database scheme.");
+                continue;
+            }
+
+            $content = $content->append(
+                "
+            '$keyName' => [{$this->columnRequired($pdoColumn, $requiredLabel)}, {$this->getColumnAttributes($fillable, $pdoColumn)}],\r"
+            );
+        }
+
+        return $content;
+    }
+
+    /**
+     * @param string $requiredLabel
+     * @param Model|null $model
+     * @param string|null $keyPrefix
+     * @return string
+     */
+    private function getFillablesForRequestRelation(string $requiredLabel = 'required', ?Model $model = null, ?string $keyPrefix = null, array $ignore = []): string
+    {
+        $useModel = $model ?? $this->config->model;
+        $fillables = ApiModel::fillable($useModel);
 
         $pdoColumns = $this->getPDOColumns($useModel);
         $relatedPdoColumn = $this->getPDOColumns($useModel->getModel())->firstWhere('name', 'id');
@@ -544,11 +582,11 @@ class MakeApiResource extends Command
                 
         foreach ($fillables as $fillable) {
             $keyName = $keyPrefix ? "$keyPrefix.$fillable" : $fillable;
-
+            
             if (in_array($fillable, [... config('laravel-api-resource.exclude.requests', []), ... $ignore]) || $useModel->getKeyName() === $fillable) {
                 continue;
             }
-
+                        
             $pdoColumn = $pdoColumns->firstWhere('name', $fillable);
 
             if ($pdoColumn === null) {
@@ -583,9 +621,7 @@ class MakeApiResource extends Command
         $content = str("
             '{$keyName}id' => [{$this->columnRequired($relatedPdoColumn, $requiredLabel)}, {$this->getColumnAttributes('id', $relatedPdoColumn)}],\r");
 
-        foreach ($fillables as $fillable) {
-
-
+        foreach ($fillables as $fillable) {            
             $pdoColumn = $pdoColumns->firstWhere('name', $fillable);
 
             if ($pdoColumn === null) {
