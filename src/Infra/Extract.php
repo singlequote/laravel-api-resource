@@ -20,7 +20,7 @@ class Extract
 
         return [
             str($operator)->replace('%', '')->value(),
-            self::parseValue($operator, $value),
+            self::parseValue($operator, $value ?? ''),
         ];
     }
 
