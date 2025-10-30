@@ -535,16 +535,16 @@ class MakeApiResource extends Command
         $fillables = ApiModel::fillable($useModel);
         $pdoColumns = $this->getPDOColumns($useModel);
         $keyName = $keyPrefix ? "$keyPrefix." : "";
-        
+
         $content = str("");
-                
+
         foreach ($fillables as $fillable) {
             $keyName = $keyPrefix ? "$keyPrefix.$fillable" : $fillable;
-            
+
             if (in_array($fillable, [... config('laravel-api-resource.exclude.requests', []), ... $ignore]) || $useModel->getKeyName() === $fillable) {
                 continue;
             }
-                        
+
             $pdoColumn = $pdoColumns->firstWhere('name', $fillable);
 
             if ($pdoColumn === null) {
@@ -574,19 +574,19 @@ class MakeApiResource extends Command
 
         $pdoColumns = $this->getPDOColumns($useModel);
         $relatedPdoColumn = $this->getPDOColumns($useModel->getModel())->firstWhere('name', 'id');
-        
+
         $keyName = $keyPrefix ? "$keyPrefix." : "";
-        
+
         $content = str("
             '{$keyName}id' => [{$this->columnRequired($relatedPdoColumn, $requiredLabel)}, {$this->getColumnAttributes('id', $relatedPdoColumn)}],\r");
-                
+
         foreach ($fillables as $fillable) {
             $keyName = $keyPrefix ? "$keyPrefix.$fillable" : $fillable;
-            
+
             if (in_array($fillable, [... config('laravel-api-resource.exclude.requests', []), ... $ignore]) || $useModel->getKeyName() === $fillable) {
                 continue;
             }
-                        
+
             $pdoColumn = $pdoColumns->firstWhere('name', $fillable);
 
             if ($pdoColumn === null) {
@@ -621,7 +621,7 @@ class MakeApiResource extends Command
         $content = str("
             '{$keyName}id' => [{$this->columnRequired($relatedPdoColumn, $requiredLabel)}, {$this->getColumnAttributes('id', $relatedPdoColumn)}],\r");
 
-        foreach ($fillables as $fillable) {            
+        foreach ($fillables as $fillable) {
             $pdoColumn = $pdoColumns->firstWhere('name', $fillable);
 
             if ($pdoColumn === null) {

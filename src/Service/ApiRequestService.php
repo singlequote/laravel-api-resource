@@ -6,6 +6,8 @@ use SingleQuote\LaravelApiResource\Infra\ApiModel;
 use SingleQuote\LaravelApiResource\Rules\FillableRule;
 use SingleQuote\LaravelApiResource\Rules\MixedRule;
 use SingleQuote\LaravelApiResource\Rules\OrderByRule;
+use SingleQuote\LaravelApiResource\Rules\ValidateArrayKeys;
+use SingleQuote\LaravelApiResource\Rules\ValidateHasParameter; // <-- Importeer de nieuwe rule
 
 use function config;
 
@@ -21,50 +23,55 @@ class ApiRequestService
         $relations = ApiModel::getRelations($model);
 
         return [
-            // Set limit per page
-            'limit' => 'nullable|int|max:'.config('laravel-api-resource.api.limit', 1000).'|min:1',
-            // Search on results
-            'search' => 'nullable|array',
-            'search.fields' => 'nullable|array',
-            'search.query' => 'nullable|string|min:2|max:191',
-            // Set where
-            'where' => 'nullable|array',
-            'where.*' => ['required', new MixedRule()],
-            // Set whereIn
-            'whereIn' => 'nullable|array',
-            'whereIn.*' => 'required|array',
-            // Set whereNotIn
-            'whereNotIn' => 'nullable|array',
-            'whereNotIn.*' => 'required|array',
-            // Set whereNotNull
-            'whereNull' => 'nullable|array',
-            'whereNull.*' => ['required', 'string', new FillableRule($fillables)],
-            // Set whereNotNull
-            'whereNotNull' => 'nullable|array',
-            'whereNotNull.*' => ['required', 'string', new FillableRule($fillables)],
-            // Set Has
-            'has' => 'nullable',
-            'has.*' => 'required',
-            // Set doesntHave
-            'doesntHave' => 'nullable|array',
-            'doesntHave.*' => 'required|string|in:'.$relations,
-            // Set Where Relation
-            'whereRelation' => 'nullable|array',
-            'whereRelation.*' => 'required|array',
-            'whereRelation.*.*' => ['required', new MixedRule()],
-            // Set With relations
-            'with' => 'nullable|array',
-            'with.*' => 'required',
-            // Set With count
-            'withCount' => 'nullable|array',
-            'withCount.*' => 'required|string|in:'.$relations,
-            // Set select on columns
-            'select' => 'nullable|array',
-            'select.*' => 'required|string|in:'.$fillables,
-            // Set the order
+            // == Pagination & Sorting ==
+            'limit' => ['nullable', 'int', 'min:1', 'max:' . config('laravel-api-resource.api.limit', 1000)],
             'orderBy' => ['nullable', 'string', new OrderByRule($model)],
             'orderByDesc' => ['nullable', 'string', new OrderByRule($model)],
-            // Trashed
+
+            // == Selection & Loading ==
+            'select' => 'nullable|array',
+            'select.*' => 'nullable|string|in:' . $fillables,
+
+            'with' => ['nullable', 'array', new ValidateArrayKeys($relations)],
+            'with.*' => 'nullable',
+
+            'withCount' => 'nullable|array',
+            'withCount.*' => 'nullable|string|in:' . $relations,
+
+            // == Searching ==
+            'search' => 'nullable|array',
+            'search.fields' => 'nullable|array',
+            'search.fields.*' => 'nullable|string|in:'.$fillables,
+            'search.query' => 'nullable|string|min:2|max:191',
+
+            // == Filtering (Where) ==
+            'where' => ['nullable', 'array', new ValidateArrayKeys($fillables)],
+            'where.*' => ['nullable', new MixedRule()],
+
+            'whereIn' => ['nullable', 'array', new ValidateArrayKeys($fillables)],
+            'whereIn.*' => 'nullable|array',
+
+            'whereNotIn' => ['nullable', 'array', new ValidateArrayKeys($fillables)],
+            'whereNotIn.*' => 'nullable|array',
+
+            'whereNull' => 'nullable|array',
+            'whereNull.*' => ['nullable', 'string', new FillableRule($fillables)],
+
+            'whereNotNull' => 'nullable|array',
+            'whereNotNull.*' => ['nullable', 'string', new FillableRule($fillables)],
+
+            // == Relation Filtering ==
+            'has' => ['nullable', 'array', new ValidateHasParameter($relations)], // <-- Gebruik de rule
+            'has.*' => 'nullable', // Behoud deze om lege geneste arrays te voorkomen
+
+            'doesntHave' => 'nullable|array',
+            'doesntHave.*' => 'nullable|string|in:' . $relations,
+
+            'whereRelation' => ['nullable', 'array', new ValidateArrayKeys($relations)],
+            'whereRelation.*' => 'required|array',
+            'whereRelation.*.*' => ['required', new MixedRule()],
+
+            // == Soft Deletes ==
             'withTrashed' => ['nullable', 'boolean'],
             'onlyTrashed' => ['nullable', 'boolean'],
         ];

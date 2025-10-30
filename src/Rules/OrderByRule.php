@@ -12,7 +12,7 @@ class OrderByRule implements ValidationRule
 {
     public function __construct(protected string $model)
     {
-
+        //
     }
 
     /**

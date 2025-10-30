@@ -11,8 +11,7 @@ class FillableRule implements ValidationRule
 {
     public function __construct(protected readonly string $fillables)
     {
-
-
+        //
     }
 
     /**
@@ -25,7 +24,7 @@ class FillableRule implements ValidationRule
         $key = str($value)->before('->')->value();
 
         if (!in_array($key, $fillables)) {
-            $fail('The :attribute must be either a string or array.');
+            $fail("The selected :attribute '$value' is not a fillable field.");
         }
     }
 }

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use SingleQuote\LaravelApiResource\Infra\ApiModel;
 use SingleQuote\LaravelApiResource\Infra\Extract;
+
 use function str;
 
 /**
@@ -35,7 +36,7 @@ class ScopeWhere
             if (str($column)->contains('.') && !self::isJsonColumn($builder, $column)) {
                 $builder = self::handleRelation($builder, $boolean, $column, $scope);
                 continue;
-            }else if (str($column)->contains('.') && self::isJsonColumn($builder, $column)) {
+            } elseif (str($column)->contains('.') && self::isJsonColumn($builder, $column)) {
                 $column = "{$builder->getModel()->getTable()}.".str($column)->replace('.', '->')->value();
             } else {
                 $column = "{$builder->getModel()->getTable()}.$column";
@@ -78,9 +79,9 @@ class ScopeWhere
      * @return bool
      */
     public static function isJsonColumn(Builder|QueryBuilder $builder, string $column): bool
-    {        
+    {
         $fillables = ApiModel::fillable($builder->getModel());
-        
+
         return $fillables->contains(str($column)->before('.')->value());
     }
 }
