@@ -7,7 +7,7 @@ use SingleQuote\LaravelApiResource\Rules\FillableRule;
 use SingleQuote\LaravelApiResource\Rules\MixedRule;
 use SingleQuote\LaravelApiResource\Rules\OrderByRule;
 use SingleQuote\LaravelApiResource\Rules\ValidateArrayKeys;
-use SingleQuote\LaravelApiResource\Rules\ValidateHasParameter; // <-- Importeer de nieuwe rule
+use SingleQuote\LaravelApiResource\Rules\ValidateHasParameter;
 
 use function config;
 
@@ -61,8 +61,8 @@ class ApiRequestService
             'whereNotNull.*' => ['nullable', 'string', new FillableRule($fillables)],
 
             // == Relation Filtering ==
-            'has' => ['nullable', 'array', new ValidateHasParameter($relations)], // <-- Gebruik de rule
-            'has.*' => 'nullable', // Behoud deze om lege geneste arrays te voorkomen
+            'has' => ['nullable', 'array', new ValidateHasParameter($relations)],
+            'has.*' => 'nullable',
 
             'doesntHave' => 'nullable|array',
             'doesntHave.*' => 'nullable|string|in:' . $relations,
