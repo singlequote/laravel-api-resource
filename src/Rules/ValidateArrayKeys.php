@@ -31,12 +31,12 @@ class ValidateArrayKeys implements ValidationRule
             return;
         }
 
-        $inputKeys = array_keys($value);
-        $invalidKeys = array_diff($inputKeys, $this->allowedKeys);
+        // $inputKeys = array_keys($value);
+        // $invalidKeys = array_diff($inputKeys, $this->allowedKeys);
 
-        if (!empty($invalidKeys)) {
-            $keysString = implode(', ', $invalidKeys);
-            $fail("The :attribute contains invalid keys: [{$keysString}].");
-        }
+        // if (!empty($invalidKeys)) {
+        //     $keysString = implode(', ', $invalidKeys);
+        //     $fail("The :attribute contains invalid keys: [{$keysString}].");
+        // }
     }
 }
