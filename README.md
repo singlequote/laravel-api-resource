@@ -154,6 +154,8 @@ All examples use the [Ziggy](https://github.com/tighten/ziggy) package for clean
 | `search`| `array` | Searches specified columns for a query. |
 | `where`| `array` | Adds a "where" clause to the query. |
 | `orWhere`| `array` | Adds an "or where" clause. |
+| `whereJsonContains` | `array` | Queries a relationship with a `where` condition. |
+| `whereJsonDoesntContain` | `array` | Queries a json column with a `whereIn` condition. |
 | `whereIn` | `array` | Filters by a column's value within an array. |
 | `whereNotIn` | `array` | Filters by a column's value not in an array. |
 | `whereNull` | `string` | Finds records where a column is NULL. |
@@ -215,6 +217,18 @@ axios.get(route('api.users.index', {
 }));
 // GET /api/users?where[date_of_birth][gt]=1995-01-31
 ```
+
+### whereJsonContains / whereJsonDoesntContain
+
+Verifies that a column's value is (or is not) within a given array.
+
+```javascript
+axios.get(route('api.users.index', {
+    whereJsonContains: { data->language: ['en', 'nl'] }
+}));
+// GET /api/users?whereJsonContains[data->language][0]=en&whereJsonContains[data->language][1]=nl
+```
+
 
 ### whereIn / whereNotIn
 
