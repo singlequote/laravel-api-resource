@@ -48,6 +48,15 @@ class ApiRequestService
             'where' => ['nullable', 'array', new ValidateArrayKeys($fillables)],
             'where.*' => ['nullable', new MixedRule()],
 
+            'orWhere' => ['nullable', 'array', new ValidateArrayKeys($fillables)],
+            'orWhere.*' => ['nullable', new MixedRule()],
+
+            'whereJsonContains' => ['nullable', 'array', new ValidateArrayKeys($fillables)],
+            'whereJsonContains.*' => ['nullable', new MixedRule()],
+
+            'whereJsonDoesntContain' => ['nullable', 'array', new ValidateArrayKeys($fillables)],
+            'whereJsonDoesntContain.*' => ['nullable', new MixedRule()],
+
             'whereIn' => ['nullable', 'array', new ValidateArrayKeys($fillables)],
             'whereIn.*' => 'nullable|array',
 

@@ -15,9 +15,10 @@ use SingleQuote\LaravelApiResource\Scopes\ScopeSelect;
 use SingleQuote\LaravelApiResource\Scopes\ScopeTrashed;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWhere;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWhereIn;
+use SingleQuote\LaravelApiResource\Scopes\ScopeWhereJsonContains;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWhereNotIn;
-use SingleQuote\LaravelApiResource\Scopes\ScopeWhereNull;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWhereNotNull;
+use SingleQuote\LaravelApiResource\Scopes\ScopeWhereNull;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWhereRelation;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWith;
 use SingleQuote\LaravelApiResource\Scopes\ScopeWithCount;
@@ -36,6 +37,8 @@ trait HasApi
     {
         ScopeWith::handle($builder, $request);
         ScopeWhere::handle($builder, $request->validated('where', []));
+        ScopeWhereJsonContains::handle($builder, $request->validated('whereJsonContains', []));
+        ScopeWhereJsonContains::handle($builder, $request->validated('whereJsonDoesntContain', []), 'whereJsonDoesntContain');
         ScopeWhere::handle($builder, $request->validated('orWhere', []), 'or');
         ScopeHas::handle($builder, $request->validated('has', []));
         ScopeWhereIn::handle($builder, $request->validated('whereIn', []));
