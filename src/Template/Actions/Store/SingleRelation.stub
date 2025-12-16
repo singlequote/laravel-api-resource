@@ -10,11 +10,5 @@
             return;
         }
 
-        foreach ($request->get('<relation>', []) as $item) {
-            if (isset($item['id'])) {
-                $<modelLower>-><relation>()->updateOrCreate(['id' => $item['id']], $item);
-            } else {
-                $<modelLower>-><relation>()->create($item);
-            }
-        }
+        $<modelLower>-><relation>()->updateOrCreate([], $request->get('<relation>'));
     }

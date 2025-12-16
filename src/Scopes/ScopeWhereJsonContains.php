@@ -5,6 +5,7 @@ namespace SingleQuote\LaravelApiResource\Scopes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use SingleQuote\LaravelApiResource\Infra\ApiModel;
+
 use function str;
 
 /**
@@ -23,7 +24,7 @@ class ScopeWhereJsonContains
     public static function handle(Builder|QueryBuilder $builder, array $validated, string $type = 'whereJsonContains'): Builder|QueryBuilder
     {
         foreach ($validated ?? [] as $column => $scope) {
-                        
+
             if (!self::isJsonColumn($builder, $column)) {
                 continue;
             }
@@ -34,7 +35,7 @@ class ScopeWhereJsonContains
             }
 
             $column = "{$builder->getModel()->getTable()}.".str($column)->replace('.', '->')->value();
-                        
+
             $builder->{$type}($column, $scope);
         }
 

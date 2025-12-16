@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use ReflectionMethod;
+use SingleQuote\LaravelApiResource\Attributes\SkipApiGeneration; // Aangepaste import
 use SingleQuote\LaravelApiResource\Generator\StubGenerator;
 use SingleQuote\LaravelApiResource\Infra\ApiModel;
 use SingleQuote\LaravelApiResource\Traits\HasApi;
@@ -212,6 +214,39 @@ class MakeApiResource extends Command
     }
 
     /**
+     * Check if a relation should be ignored based on the SkipApiGeneration attribute and scope.
+     *
+     * @param string $relationMethod
+     * @param string $scope (actions, requests, resource)
+     * @return bool
+     */
+    private function shouldIgnoreRelation(string $relationMethod, string $scope): bool
+    {
+        try {
+            $reflection = new ReflectionMethod($this->config->model, $relationMethod);
+            $attributes = $reflection->getAttributes(SkipApiGeneration::class);
+
+            if (empty($attributes)) {
+                return false;
+            }
+
+            $attributeInstance = $attributes[0]->newInstance();
+            $skips = $attributeInstance->skips;
+
+            // Als 'all' erin staat, altijd negeren
+            if (in_array(SkipApiGeneration::ALL, $skips)) {
+                return true;
+            }
+
+            // Check of de specifieke scope genegeerd moet worden
+            return in_array($scope, $skips);
+
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
      * @param string $configName
      * @param mixed $default
      * @param bool $replaceKeys
@@ -241,7 +276,6 @@ class MakeApiResource extends Command
         $fileName = "Api{$this->config->modelName}Controller.php";
         $targetPath = "$newPath/$fileName";
 
-        // For single files, we use the standard overwrite check
         if (!$this->shouldOverwrite($targetPath)) {
             return;
         }
@@ -273,12 +307,10 @@ class MakeApiResource extends Command
         $newPath = base_path("$baseNamespace/{$this->config->modelPlural}");
         $overwriteAll = false;
 
-        // Check if directory exists and determine overwrite strategy
         if (File::isDirectory($newPath)) {
             if ($this->option('force')) {
                 $overwriteAll = true;
             } elseif (!collect(File::files($newPath))->isEmpty()) {
-                // Ask once for the whole folder
                 $overwriteAll = $this->confirm("Actions directory for '{$this->config->modelPlural}' already exists. Do you want to overwrite all actions?", true);
             }
         }
@@ -286,7 +318,6 @@ class MakeApiResource extends Command
         $this->ensureDirectoryExists($newPath);
         $this->stubGenerator->copyDirectory('Actions/Templates', $newPath);
 
-        // Filter only .stub files to avoid re-processing existing PHP files (prevents double prompts)
         $files = collect(File::files($newPath))->filter(fn ($file) => str($file->getFilename())->endsWith('.stub'));
 
         foreach ($files as $file) {
@@ -310,7 +341,6 @@ class MakeApiResource extends Command
                 ->replace('.stub', '.php')
                 ->toString();
 
-            // Pass the $overwriteAll flag to avoid individual prompts if accepted
             $this->storeFile("$newPath/$newName", $newContent->toString(), $overwriteAll);
 
             File::delete($file->getPathname());
@@ -328,18 +358,27 @@ class MakeApiResource extends Command
         $content = str('');
 
         foreach ($relations as $relation) {
+            // Check scope 'actions'
+            if ($this->shouldIgnoreRelation($relation, SkipApiGeneration::ACTIONS)) {
+                continue;
+            }
+
             $className = $this->getClassName($relation);
 
             if (
                 in_array($relation, config('laravel-api-resource.exclude.resources', []))
                 || !in_array($className, $this->relationTypes)
-                || in_array($className, $this->singleRelations)
             ) {
                 continue;
             }
 
-            $pivotRelations = ['BelongsToMany', 'MorphToMany', 'MorphedByMany'];
-            $fileType = in_array($className, $pivotRelations) ? "PivotRelation" : "Relation";
+            if (in_array($className, $this->singleRelations)) {
+                $fileType = "SingleRelation";
+            } elseif (in_array($className, ['BelongsToMany', 'MorphToMany', 'MorphedByMany'])) {
+                $fileType = "PivotRelation";
+            } else {
+                $fileType = "Relation";
+            }
 
             $content = $content->append(File::get($this->stubGenerator->getFilePath("Actions/$dir/$fileType")))
                 ->replace('<ucRelation>', ucfirst($relation))
@@ -359,12 +398,16 @@ class MakeApiResource extends Command
         $lower = str($this->config->modelName)->lcFirst()->toString();
 
         foreach ($relations as $relation) {
+            // Check scope 'actions'
+            if ($this->shouldIgnoreRelation($relation, SkipApiGeneration::ACTIONS)) {
+                continue;
+            }
+
             $className = $this->getClassName($relation);
 
             if (
                 in_array($relation, config('laravel-api-resource.exclude.resources', []))
                 || !in_array($className, $this->relationTypes)
-                || in_array($className, $this->singleRelations)
             ) {
                 continue;
             }
@@ -383,7 +426,6 @@ class MakeApiResource extends Command
         $newPath = base_path($this->getConfig('namespaces.resources'));
         $targetPath = "$newPath/{$this->config->modelName}Resource.php";
 
-        // Single file, standard check
         if (!$this->shouldOverwrite($targetPath)) {
             return;
         }
@@ -431,6 +473,11 @@ class MakeApiResource extends Command
         $content = str('');
 
         foreach ($relations as $relation) {
+            // Check scope 'resource'
+            if ($this->shouldIgnoreRelation($relation, SkipApiGeneration::RESOURCE)) {
+                continue;
+            }
+
             if (in_array($relation, config('laravel-api-resource.exclude.resources', []))) {
                 continue;
             }
@@ -522,7 +569,6 @@ class MakeApiResource extends Command
         $newPath = base_path("$baseNamespace/{$this->config->modelPlural}");
         $overwriteAll = false;
 
-        // Check if directory exists and determine overwrite strategy
         if (File::isDirectory($newPath)) {
             if ($this->option('force')) {
                 $overwriteAll = true;
@@ -534,7 +580,6 @@ class MakeApiResource extends Command
         $this->ensureDirectoryExists($newPath);
         $this->stubGenerator->copyDirectory('Http/Requests/Templates', $newPath);
 
-        // Filter only .stub files
         $files = collect(File::files($newPath))->filter(fn ($file) => str($file->getFilename())->endsWith('.stub'));
 
         foreach ($files as $file) {
@@ -561,7 +606,6 @@ class MakeApiResource extends Command
                     ->replace('<attributes>', $this->getAttributesForRequest());
             }
 
-            // Pass the $overwriteAll flag
             $this->storeFile("$newPath/$newName", $newContent->toString(), $overwriteAll);
 
             File::delete($file->getPathname());
@@ -605,6 +649,11 @@ class MakeApiResource extends Command
         $content = str('');
 
         foreach ($relations as $relation) {
+            // Check scope 'requests'
+            if ($this->shouldIgnoreRelation($relation, SkipApiGeneration::REQUESTS)) {
+                continue;
+            }
+
             if (in_array($relation, config('laravel-api-resource.exclude.resources', []))) {
                 continue;
             }
@@ -630,6 +679,11 @@ class MakeApiResource extends Command
         $content = str('');
 
         foreach ($relations as $relation) {
+            // Check scope 'requests'
+            if ($this->shouldIgnoreRelation($relation, SkipApiGeneration::REQUESTS)) {
+                continue;
+            }
+
             $className = $this->getClassName($relation);
 
             if (in_array($relation, config('laravel-api-resource.exclude.resources', [])) || !in_array($className, $this->relationTypes)) {
