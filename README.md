@@ -7,6 +7,13 @@ A practical Laravel package designed to streamline API development by automating
 
 This package accelerates your workflow with two core features:
 1.  **Rapid Scaffolding**: Use the `php artisan make:api-resource` command to intelligently generate a full set of API files (Controller, Actions, Requests, and Resource) from your existing models.
+    Features:
+    - Complete Scaffolding: Generates Controller, FormRequests, Actions, and API Resources.
+    - Smart Relation Detection: Automatically distinguishes between "Single" relations (e.g., HasOne, BelongsTo) and "Collection" relations (e.g., HasMany, BelongsToMany).
+    - Database Driven Validation: Generates validation rules based on your database columns (types, nullable, max length, etc.).
+    - Advanced Overwriting: Supports force overwriting and selective generation.
+    
+    Route Suggestions: Provides the correct API route definition upon completion.
 2.  **Powerful Filtering**: Equip your API endpoints with a comprehensive set of filters from the moment you install it. Sort, search, and filter resources with ease without any initial setup.
 
 ---
@@ -71,6 +78,27 @@ Use the `make:api-resource` Artisan command to generate all the necessary files 
 ```bash
 php artisan make:api-resource User
 ```
+
+### Command Options
+The command supports several options to customize the generation process:
+| Option | Description |
+| :--- | :--- |
+| `--force` | Overwrite existing files without asking for confirmation. Useful for CI/CD or quick regeneration. |
+| `--only`| Generate only specific parts. Comma separated. Available: `controller`, `actions`, `requests`, `resource`. |
+| `--except`| Exclude specific parts from generation. Comma separated. |
+| `--module`| Specify a module name if you are using a modular application structure. |
+
+**Example:**
+```bash
+php artisan make:api-resource User --force
+```
+```bash
+php artisan make:api-resource User --only=resource,controller
+```
+```bash
+php artisan make:api-resource User --except=requests
+```
+
 
 This single command creates the following file structure, ready for you to add your business logic:
 
