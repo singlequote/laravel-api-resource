@@ -99,6 +99,23 @@ php artisan make:api-resource User --only=resource,controller
 php artisan make:api-resource User --except=requests
 ```
 
+## Supported Relations
+The generator recognizes a wide range of Eloquent relationships and generates the appropriate code (e.g., new UserResource vs UserResource::collection):
+
+**Single Relations (Returns Object):**
+- HasOne
+- MorphOne
+- BelongsTo
+- MorphTo
+- HasOneThrough
+
+**Collection Relations (Returns Array):**
+- HasMany
+- BelongsToMany
+- MorphToMany
+- MorphMany
+- HasManyThrough
+- MorphedByMany
 
 This single command creates the following file structure, ready for you to add your business logic:
 
