@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace SingleQuote\LaravelApiResource\Commands;
 
 use Illuminate\Console\Command;
@@ -15,6 +17,7 @@ use Symfony\Component\Finder\SplFileInfo;
 use Throwable;
 
 use function base_path;
+use function cache;
 use function class_uses_recursive;
 use function collect;
 use function config;
@@ -27,19 +30,50 @@ class MakeApiResource extends Command
      *
      * @var string
      */
-    protected $signature = 'make:api-resource {model} {--module=}';
+    protected $signature = 'make:api-resource 
+                            {model : The model class name} 
+                            {--module= : The module name (optional)}
+                            {--force : Overwrite existing files without confirmation}
+                            {--only= : Generate only specific parts (controller, actions, requests, resource)}
+                            {--except= : Exclude specific parts from generation}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Create new Api resource';
+    protected $description = 'Create a new API resource with Controller, Actions, Requests and Resource classes.';
+
+    /**
+     * List of relation types that return a collection.
+     *
+     * @var array<string>
+     */
     protected array $relationTypes = [
         'HasMany',
+        'HasOne',
         'BelongsToMany',
         'MorphToMany',
         'MorphTo',
+        'MorphOne',
+        'MorphMany',
+        'BelongsTo',
+        'HasOneThrough',
+        'HasManyThrough',
+        'MorphedByMany',
+    ];
+
+    /**
+     * List of relation types that return a single model.
+     *
+     * @var array<string>
+     */
+    protected array $singleRelations = [
+        'HasOne',
+        'MorphOne',
+        'BelongsTo',
+        'MorphTo',
+        'HasOneThrough',
     ];
 
     /**
@@ -47,6 +81,9 @@ class MakeApiResource extends Command
      */
     private object $config;
 
+    /**
+     * @param StubGenerator $stubGenerator
+     */
     public function __construct(
         protected StubGenerator $stubGenerator
     ) {
@@ -54,25 +91,77 @@ class MakeApiResource extends Command
     }
 
     /**
+     * Execute the console command.
+     *
      * @return int
      */
-    public function handle()
+    public function handle(): int
     {
         cache()->clear();
 
         if (!$this->determineModelExists()) {
-            return 0;
+            return self::FAILURE;
         }
 
-        $this->copyController();
-        $this->copyActions();
-        $this->copyRequests();
-        $this->copyResource();
+        $tasks = $this->getGenerationTasks();
 
-        $this->info('Api resource created...');
+        $this->output->info("Generating API Resource for {$this->config->modelName}...");
+        $this->output->newLine();
+
+        foreach ($tasks as $taskName => $task) {
+            if ($this->shouldGenerate($taskName)) {
+                $this->line("Processing <comment>$taskName</comment>...", 'v');
+                $task();
+            }
+        }
+
+        $this->output->newLine();
+        $this->info("Api resource for {$this->config->modelName} created successfully.");
+        $this->displayRouteSuggestion();
+
+        return self::SUCCESS;
     }
 
     /**
+     * Define the available generation tasks.
+     *
+     * @return array<string, callable>
+     */
+    private function getGenerationTasks(): array
+    {
+        return [
+            'controller' => fn () => $this->copyController(),
+            'actions'    => fn () => $this->copyActions(),
+            'requests'   => fn () => $this->copyRequests(),
+            'resource'   => fn () => $this->copyResource(),
+        ];
+    }
+
+    /**
+     * Determine if a specific part should be generated based on --only and --except flags.
+     *
+     * @param string $part
+     * @return bool
+     */
+    private function shouldGenerate(string $part): bool
+    {
+        $only = $this->option('only') ? explode(',', (string) $this->option('only')) : [];
+        $except = $this->option('except') ? explode(',', (string) $this->option('except')) : [];
+
+        if (!empty($only) && !in_array($part, $only)) {
+            return false;
+        }
+
+        if (!empty($except) && in_array($part, $except)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Validate if the model exists and has the required traits.
+     *
      * @return bool
      */
     private function determineModelExists(): bool
@@ -97,7 +186,7 @@ class MakeApiResource extends Command
             return false;
         }
 
-        $this->info("Model found as $modelPath::class");
+        $this->line("Model found: <comment>$modelPath</comment>");
 
         $this->fillConfig($modelPath);
 
@@ -110,12 +199,15 @@ class MakeApiResource extends Command
      */
     private function fillConfig(string $modelPath): void
     {
+        $modelInstance = new $modelPath();
+        $className = $modelInstance::class;
+
         $this->config = (object) [
-                'model' => new $modelPath(),
-                'modelPath' => (new $modelPath())::class,
-                'modelName' => str((new $modelPath())::class)->afterLast('\\'),
-                'modelPlural' => str((new $modelPath())::class)->afterLast('\\')->plural(),
-                'modelLowerPlural' => str((new $modelPath())::class)->afterLast('\\')->lower()->plural(),
+            'model'            => $modelInstance,
+            'modelPath'        => $className,
+            'modelName'        => str($className)->afterLast('\\')->toString(),
+            'modelPlural'      => str($className)->afterLast('\\')->plural()->toString(),
+            'modelLowerPlural' => str($className)->afterLast('\\')->lower()->plural()->toString(),
         ];
     }
 
@@ -130,14 +222,14 @@ class MakeApiResource extends Command
         $config = config("laravel-api-resource.$configName", $default);
 
         if (str($config)->contains('module') && !$replaceKeys) {
-            return str($config)->replace('{module}', '');
+            return str($config)->replace('{module}', '')->toString();
         }
 
         if (str($config)->contains('module') && $this->hasOption('module')) {
-            return str($config)->replace('{module}', $this->option('module'));
+            return str($config)->replace('{module}', $this->option('module'))->toString();
         }
 
-        return $config;
+        return (string) $config;
     }
 
     /**
@@ -146,29 +238,30 @@ class MakeApiResource extends Command
     private function copyController(): void
     {
         $newPath = base_path($this->getConfig('namespaces.controllers'));
+        $fileName = "Api{$this->config->modelName}Controller.php";
+        $targetPath = "$newPath/$fileName";
 
-        if (File::exists("$newPath/Api{$this->config->modelName}Controller.php") && !$this->confirm("Api{$this->config->modelName}Controller.php already exists, overwrite it?", true)) {
+        // For single files, we use the standard overwrite check
+        if (!$this->shouldOverwrite($targetPath)) {
             return;
         }
 
-        if (!File::isDirectory($newPath)) {
-            File::makeDirectory($newPath);
-        }
+        $this->ensureDirectoryExists($newPath);
 
-        File::copy($this->stubGenerator->getFilePath("Http/Controllers/ApiTemplateController"), "$newPath/Api{$this->config->modelName}Controller.php");
+        File::copy($this->stubGenerator->getFilePath("Http/Controllers/ApiTemplateController"), $targetPath);
 
-        $content = File::get("$newPath/Api{$this->config->modelName}Controller.php");
+        $content = File::get($targetPath);
 
         $newContent = str($content)
             ->replace('<namespace>', $this->getConfig('namespaces.controllers'))
-            ->replace('<modelLower>', str($this->config->modelName)->lcFirst())
+            ->replace('<modelLower>', str($this->config->modelName)->lcFirst()->toString())
             ->replace('<modelPath>', $this->config->modelPath)
             ->replace('<modelPlural>', $this->config->modelPlural)
             ->replace('<modelName>', $this->config->modelName)
             ->replace('<requestNamespace>', $this->getConfig('namespaces.requests'))
             ->replace('<actionNamespace>', $this->getConfig('namespaces.actions'));
 
-        $this->updateFile("$newPath/Api{$this->config->modelName}Controller.php", $newContent);
+        $this->updateFile($targetPath, $newContent->toString());
     }
 
     /**
@@ -176,20 +269,34 @@ class MakeApiResource extends Command
      */
     private function copyActions(): void
     {
-        $newPath = base_path($this->getConfig('namespaces.actions') . "/{$this->config->modelPlural}");
+        $baseNamespace = $this->getConfig('namespaces.actions');
+        $newPath = base_path("$baseNamespace/{$this->config->modelPlural}");
+        $overwriteAll = false;
 
-        $this->deleteDirectory($newPath);
+        // Check if directory exists and determine overwrite strategy
+        if (File::isDirectory($newPath)) {
+            if ($this->option('force')) {
+                $overwriteAll = true;
+            } elseif (!collect(File::files($newPath))->isEmpty()) {
+                // Ask once for the whole folder
+                $overwriteAll = $this->confirm("Actions directory for '{$this->config->modelPlural}' already exists. Do you want to overwrite all actions?", true);
+            }
+        }
 
+        $this->ensureDirectoryExists($newPath);
         $this->stubGenerator->copyDirectory('Actions/Templates', $newPath);
 
-        foreach (File::files($newPath) as $file) {
+        // Filter only .stub files to avoid re-processing existing PHP files (prevents double prompts)
+        $files = collect(File::files($newPath))->filter(fn ($file) => str($file->getFilename())->endsWith('.stub'));
+
+        foreach ($files as $file) {
             $content = str($file->getContents())
                 ->replace('<syncRelationMethods>', $this->getMethodRelationsForActions($file))
                 ->replace('<callableRelation>', $this->getCallableRelationForActions());
 
             $newContent = str($content)
-                ->replace('<namespace>', $this->getConfig('namespaces.actions') . "\\{$this->config->modelPlural}")
-                ->replace('<modelLower>', str($this->config->modelName)->lcFirst())
+                ->replace('<namespace>', "$baseNamespace\\{$this->config->modelPlural}")
+                ->replace('<modelLower>', str($this->config->modelName)->lcFirst()->toString())
                 ->replace('<modelPath>', $this->config->modelPath)
                 ->replace('<modelPlural>', $this->config->modelPlural)
                 ->replace('<modelName>', $this->config->modelName)
@@ -200,15 +307,18 @@ class MakeApiResource extends Command
             $newName = str($file->getFilename())
                 ->replace('Templates', $this->config->modelPlural)
                 ->replace('Template', $this->config->modelName)
-                ->replace('.stub', '.php');
+                ->replace('.stub', '.php')
+                ->toString();
 
-            $this->storeFile("$newPath/$newName", $newContent);
+            // Pass the $overwriteAll flag to avoid individual prompts if accepted
+            $this->storeFile("$newPath/$newName", $newContent->toString(), $overwriteAll);
 
             File::delete($file->getPathname());
         }
     }
 
     /**
+     * @param SplFileInfo $file
      * @return string
      */
     private function getMethodRelationsForActions(SplFileInfo $file): string
@@ -218,19 +328,25 @@ class MakeApiResource extends Command
         $content = str('');
 
         foreach ($relations as $relation) {
-            if (in_array($relation, config('laravel-api-resource.exclude.resources', [])) || !str($this->getClassName($relation))->startsWith($this->relationTypes)) {
+            $className = $this->getClassName($relation);
+
+            if (
+                in_array($relation, config('laravel-api-resource.exclude.resources', []))
+                || !in_array($className, $this->relationTypes)
+                || in_array($className, $this->singleRelations)
+            ) {
                 continue;
             }
 
-            $fileType = str($this->getClassName($relation))->startsWith('HasMany') ? "Relation" : "PivotRelation";
+            $pivotRelations = ['BelongsToMany', 'MorphToMany', 'MorphedByMany'];
+            $fileType = in_array($className, $pivotRelations) ? "PivotRelation" : "Relation";
 
             $content = $content->append(File::get($this->stubGenerator->getFilePath("Actions/$dir/$fileType")))
-                ->replace('<ucRelation>', ucFirst($relation))
+                ->replace('<ucRelation>', ucfirst($relation))
                 ->replace('<relation>', $relation);
         }
 
-
-        return $content;
+        return $content->toString();
     }
 
     /**
@@ -239,21 +355,24 @@ class MakeApiResource extends Command
     private function getCallableRelationForActions(): string
     {
         $relations = ApiModel::relations($this->config->model, false);
-
         $content = str('');
+        $lower = str($this->config->modelName)->lcFirst()->toString();
 
         foreach ($relations as $relation) {
+            $className = $this->getClassName($relation);
 
-            if (in_array($relation, config('laravel-api-resource.exclude.resources', [])) || !str($this->getClassName($relation))->startsWith($this->relationTypes)) {
+            if (
+                in_array($relation, config('laravel-api-resource.exclude.resources', []))
+                || !in_array($className, $this->relationTypes)
+                || in_array($className, $this->singleRelations)
+            ) {
                 continue;
             }
 
-            $lower = str($this->config->modelName)->lcFirst();
-            $content = $content->append("
-        " . str($relation)->ucfirst()->prepend('$this->sync')->append("(\$request, \${$lower});"));
+            $content = $content->append("\n        " . str($relation)->ucfirst()->prepend('$this->sync')->append("(\$request, \${$lower});"));
         }
 
-        return $content;
+        return $content->toString();
     }
 
     /**
@@ -262,18 +381,18 @@ class MakeApiResource extends Command
     private function copyResource(): void
     {
         $newPath = base_path($this->getConfig('namespaces.resources'));
+        $targetPath = "$newPath/{$this->config->modelName}Resource.php";
 
-        if (File::exists("$newPath/{$this->config->modelName}Resource.php") && !$this->confirm("{$this->config->modelName}Resource.php already exists, overwrite it?", true)) {
+        // Single file, standard check
+        if (!$this->shouldOverwrite($targetPath)) {
             return;
         }
 
-        if (!File::isDirectory($newPath)) {
-            File::makeDirectory($newPath);
-        }
+        $this->ensureDirectoryExists($newPath);
 
-        File::copy($this->stubGenerator->getFilePath("Http/Resources/TemplateResource"), "$newPath/{$this->config->modelName}Resource.php");
+        File::copy($this->stubGenerator->getFilePath("Http/Resources/TemplateResource"), $targetPath);
 
-        $content = File::get("$newPath/{$this->config->modelName}Resource.php");
+        $content = File::get($targetPath);
 
         $newContent = str($content)
             ->replace('<namespace>', $this->getConfig('namespaces.resources'))
@@ -281,7 +400,7 @@ class MakeApiResource extends Command
             ->replace('<relations>', $this->getRelationsForResource())
             ->replace('<modelName>', $this->config->modelName);
 
-        $this->updateFile("$newPath/{$this->config->modelName}Resource.php", $newContent);
+        $this->updateFile($targetPath, $newContent->toString());
     }
 
     /**
@@ -290,7 +409,6 @@ class MakeApiResource extends Command
     private function getFillablesForResource(): string
     {
         $fillables = ApiModel::fillable($this->config->model);
-
         $content = str('');
 
         foreach ($fillables as $fillable) {
@@ -298,11 +416,10 @@ class MakeApiResource extends Command
                 continue;
             }
 
-            $content = $content->append("
-            '$fillable' => \$this->whenHas('$fillable'),\r");
+            $content = $content->append("\n            '$fillable' => \$this->whenHas('$fillable'),");
         }
 
-        return $content;
+        return $content->toString();
     }
 
     /**
@@ -311,11 +428,9 @@ class MakeApiResource extends Command
     private function getRelationsForResource(): string
     {
         $relations = ApiModel::relations($this->config->model, false);
-
         $content = str('');
 
         foreach ($relations as $relation) {
-
             if (in_array($relation, config('laravel-api-resource.exclude.resources', []))) {
                 continue;
             }
@@ -332,16 +447,17 @@ class MakeApiResource extends Command
                 continue;
             }
 
-            if (str($this->getClassName($relation))->startsWith(['HasOne', 'MorphOne', 'MorphTo', 'BelongsTo']) && $this->getClassName($relation) !== 'BelongsToMany') {
+            $className = $this->getClassName($relation);
+
+            if (in_array($className, $this->singleRelations)) {
                 $type = "new \\$namespace";
             } else {
                 $type = "\\$namespace::collection";
             }
-            $content = $content->append("
-            '$relation' => $type(\$this->whenLoaded('$relation')),\r");
+            $content = $content->append("\n            '$relation' => $type(\$this->whenLoaded('$relation')),");
         }
 
-        return $content;
+        return $content->toString();
     }
 
     /**
@@ -353,12 +469,10 @@ class MakeApiResource extends Command
     private function getRelatedResource(Relation $object, string $relation, bool $tryWithinModule = true): ?string
     {
         $files = $this->tryLocateFiles($tryWithinModule);
-
         $model = get_class($object->getModel());
 
         $related = collect($files)->filter(function ($file) use ($model) {
             $namespace = $this->extractNamespace($file);
-
             return $namespace && str($file->getFilename())->contains(str($model)->afterLast('\\')->append('Resource'));
         });
 
@@ -371,14 +485,15 @@ class MakeApiResource extends Command
         }
 
         if ($related->count() > 1) {
-            $relatedFile = $this->choice("Multiple resources found, please select correct resource for $relation", $related->values()->toArray());
+            $options = $related->map(fn ($file) => $file->getPathname())->values()->toArray();
+            $choice = $this->choice("Multiple resources found for relation '$relation', please select the correct one:", $options);
 
-            return str($relatedFile)->before('.php')->value();
-        } else {
-            return $this->extractNamespace($related->first());
+            $chosenFile = $related->first(fn ($file) => $file->getPathname() === $choice);
+
+            return $this->extractNamespace($chosenFile);
         }
 
-        return null;
+        return $this->extractNamespace($related->first());
     }
 
     /**
@@ -403,33 +518,51 @@ class MakeApiResource extends Command
      */
     private function copyRequests(): void
     {
-        $newPath = base_path($this->getConfig('namespaces.requests') . "/{$this->config->modelPlural}");
+        $baseNamespace = $this->getConfig('namespaces.requests');
+        $newPath = base_path("$baseNamespace/{$this->config->modelPlural}");
+        $overwriteAll = false;
 
-        $this->deleteDirectory($newPath);
+        // Check if directory exists and determine overwrite strategy
+        if (File::isDirectory($newPath)) {
+            if ($this->option('force')) {
+                $overwriteAll = true;
+            } elseif (!collect(File::files($newPath))->isEmpty()) {
+                $overwriteAll = $this->confirm("Requests directory for '{$this->config->modelPlural}' already exists. Do you want to overwrite all requests?", true);
+            }
+        }
 
+        $this->ensureDirectoryExists($newPath);
         $this->stubGenerator->copyDirectory('Http/Requests/Templates', $newPath);
 
-        foreach (File::files($newPath) as $file) {
+        // Filter only .stub files
+        $files = collect(File::files($newPath))->filter(fn ($file) => str($file->getFilename())->endsWith('.stub'));
+
+        foreach ($files as $file) {
             $content = $file->getContents();
 
             $newContent = str($content)
-                ->replace('<namespace>', $this->getConfig('namespaces.requests') . "\\{$this->config->modelPlural}")
+                ->replace('<namespace>', "$baseNamespace\\{$this->config->modelPlural}")
                 ->replace('<modelPath>', $this->config->modelPath)
                 ->replace('<modelName>', $this->config->modelName);
 
             $newName = str($file->getFilename())
                 ->replace('Templates', $this->config->modelPlural)
                 ->replace('Template', $this->config->modelName)
-                ->replace('.stub', '.php');
+                ->replace('.stub', '.php')
+                ->toString();
 
             if (str($file->getFilename())->startsWith(['Update', 'Store'])) {
-                $newContent = $newContent->replace('<fillables>', $this->getFillablesForRequest(str($file->getFilename())->startsWith('Update') ? 'sometimes' : 'required'))
-                    ->replace('<relations>', $this->getRelationsForRequest(str($file->getFilename())->startsWith('Update') ? 'sometimes' : 'required'))
+                $isUpdate = str($file->getFilename())->startsWith('Update');
+                $requiredLabel = $isUpdate ? 'sometimes' : 'required';
+
+                $newContent = $newContent->replace('<fillables>', $this->getFillablesForRequest($requiredLabel))
+                    ->replace('<relations>', $this->getRelationsForRequest($requiredLabel))
                     ->replace('<relationAttributes>', $this->getRelationAttributesForRequest())
                     ->replace('<attributes>', $this->getAttributesForRequest());
             }
 
-            $this->storeFile("$newPath/$newName", $newContent);
+            // Pass the $overwriteAll flag
+            $this->storeFile("$newPath/$newName", $newContent->toString(), $overwriteAll);
 
             File::delete($file->getPathname());
         }
@@ -444,7 +577,6 @@ class MakeApiResource extends Command
     {
         $useModel = $model ?? $this->config->model;
         $fillables = ApiModel::fillable($useModel);
-
         $content = str('');
 
         foreach ($fillables as $fillable) {
@@ -453,18 +585,15 @@ class MakeApiResource extends Command
             }
 
             $keyName = $keyPrefix ? "$keyPrefix.$fillable" : $fillable;
-
             $prefix = str($this->getConfig('namespaces.translations'))->lower();
-
             $slugged = str($useModel::class)->afterLast('\\')->snake()->lower()->plural()->replace('_', '-');
             $translateKeyName = str($fillable)->ucfirst()->replace(['-', '_'], ' ');
             $key = str("$prefix$slugged.$translateKeyName")->ltrim('.');
 
-            $content = $content->append("
-            '$keyName' => __('$key'),\r");
+            $content = $content->append("\n            '$keyName' => __('$key'),");
         }
 
-        return $content;
+        return $content->toString();
     }
 
     /**
@@ -473,21 +602,22 @@ class MakeApiResource extends Command
     private function getRelationAttributesForRequest(): string
     {
         $relations = ApiModel::relations($this->config->model, false);
-
         $content = str('');
 
         foreach ($relations as $relation) {
-
-            if (in_array($relation, config('laravel-api-resource.exclude.resources', [])) || !str($this->getClassName($relation))->startsWith(['HasMany'])) {
+            if (in_array($relation, config('laravel-api-resource.exclude.resources', []))) {
                 continue;
             }
 
             $object = $this->config->model->$relation();
+            $className = $this->getClassName($relation);
+            $isSingle = in_array($className, $this->singleRelations);
+            $prefix = $isSingle ? $relation : "$relation.*";
 
-            $content = $content->append($this->getAttributesForRequest($object->getModel(), "$relation.*"));
+            $content = $content->append($this->getAttributesForRequest($object->getModel(), $prefix));
         }
 
-        return $content;
+        return $content->toString();
     }
 
     /**
@@ -497,36 +627,38 @@ class MakeApiResource extends Command
     private function getRelationsForRequest(string $requiredLabel = 'required'): string
     {
         $relations = ApiModel::relations($this->config->model, false);
-
         $content = str('');
 
         foreach ($relations as $relation) {
+            $className = $this->getClassName($relation);
 
-            if (in_array($relation, config('laravel-api-resource.exclude.resources', [])) || !str($this->getClassName($relation))->startsWith($this->relationTypes)) {
+            if (in_array($relation, config('laravel-api-resource.exclude.resources', [])) || !in_array($className, $this->relationTypes)) {
                 continue;
             }
 
             $object = $this->config->model->$relation();
 
-            if (str($this->getClassName($relation))->startsWith(['BelongsToMany', 'MorphToMany'])) {
-                $content = $content->append("
-            '$relation' => ['nullable', 'array'],\r{$this->getFillablesForRequestUsingPivot($requiredLabel, $object, "$relation.*")}
-                ");
+            if (in_array($className, ['BelongsToMany', 'MorphToMany', 'MorphedByMany'])) {
+                $pivotFillables = $this->getFillablesForRequestUsingPivot($requiredLabel, $object, "$relation.*");
+                $content = $content->append("\n            '$relation' => ['nullable', 'array'],$pivotFillables");
             } else {
-                /** @var \Illuminate\Database\Eloquent\Relations\HasMany $object */
-                $content = $content->append("
-            '$relation' => ['nullable', 'array'],{$this->getFillablesForRequestRelation($requiredLabel, $object->getModel(), "$relation.*", [$object->getForeignKeyName()])}
-                ");
+                $isSingle = in_array($className, $this->singleRelations);
+                $prefix = $isSingle ? $relation : "$relation.*";
+                $rule = "['nullable', 'array']";
+
+                $relationFillables = $this->getFillablesForRequestRelation($requiredLabel, $object->getModel(), $prefix, [$object->getForeignKeyName()]);
+                $content = $content->append("\n            '$relation' => $rule,$relationFillables");
             }
         }
 
-        return $content;
+        return $content->toString();
     }
 
     /**
      * @param string $requiredLabel
      * @param Model|null $model
      * @param string|null $keyPrefix
+     * @param array $ignore
      * @return string
      */
     private function getFillablesForRequest(string $requiredLabel = 'required', ?Model $model = null, ?string $keyPrefix = null, array $ignore = []): string
@@ -534,106 +666,95 @@ class MakeApiResource extends Command
         $useModel = $model ?? $this->config->model;
         $fillables = ApiModel::fillable($useModel);
         $pdoColumns = $this->getPDOColumns($useModel);
-        $keyName = $keyPrefix ? "$keyPrefix." : "";
-
         $content = str("");
 
         foreach ($fillables as $fillable) {
             $keyName = $keyPrefix ? "$keyPrefix.$fillable" : $fillable;
 
-            if (in_array($fillable, [... config('laravel-api-resource.exclude.requests', []), ... $ignore]) || $useModel->getKeyName() === $fillable) {
+            if (in_array($fillable, [...config('laravel-api-resource.exclude.requests', []), ...$ignore]) || $useModel->getKeyName() === $fillable) {
                 continue;
             }
 
             $pdoColumn = $pdoColumns->firstWhere('name', $fillable);
 
             if ($pdoColumn === null) {
-                $this->error("Column $fillable does not exists within your database scheme.");
+                $this->warn("Column $fillable does not exist within your database scheme.");
                 continue;
             }
 
-            $content = $content->append(
-                "
-            '$keyName' => [{$this->columnRequired($pdoColumn, $requiredLabel)}, {$this->getColumnAttributes($fillable, $pdoColumn)}],\r"
-            );
+            $rules = "{$this->columnRequired($pdoColumn, $requiredLabel)}, {$this->getColumnAttributes($fillable, $pdoColumn)}";
+            $content = $content->append("\n            '$keyName' => [$rules],");
         }
 
-        return $content;
+        return $content->toString();
     }
 
     /**
      * @param string $requiredLabel
      * @param Model|null $model
      * @param string|null $keyPrefix
+     * @param array $ignore
      * @return string
      */
     private function getFillablesForRequestRelation(string $requiredLabel = 'required', ?Model $model = null, ?string $keyPrefix = null, array $ignore = []): string
     {
         $useModel = $model ?? $this->config->model;
         $fillables = ApiModel::fillable($useModel);
-
         $pdoColumns = $this->getPDOColumns($useModel);
         $relatedPdoColumn = $this->getPDOColumns($useModel->getModel())->firstWhere('name', 'id');
-
         $keyName = $keyPrefix ? "$keyPrefix." : "";
 
-        $content = str("
-            '{$keyName}id' => [{$this->columnRequired($relatedPdoColumn, $requiredLabel)}, {$this->getColumnAttributes('id', $relatedPdoColumn)}],\r");
+        $idRules = "{$this->columnRequired($relatedPdoColumn, $requiredLabel)}, {$this->getColumnAttributes('id', $relatedPdoColumn)}";
+        $content = str("\n            '{$keyName}id' => [$idRules],");
 
         foreach ($fillables as $fillable) {
             $keyName = $keyPrefix ? "$keyPrefix.$fillable" : $fillable;
 
-            if (in_array($fillable, [... config('laravel-api-resource.exclude.requests', []), ... $ignore]) || $useModel->getKeyName() === $fillable) {
+            if (in_array($fillable, [...config('laravel-api-resource.exclude.requests', []), ...$ignore]) || $useModel->getKeyName() === $fillable) {
                 continue;
             }
 
             $pdoColumn = $pdoColumns->firstWhere('name', $fillable);
 
             if ($pdoColumn === null) {
-                $this->error("Column $fillable does not exists within your database scheme.");
                 continue;
             }
 
-            $content = $content->append(
-                "
-            '$keyName' => [{$this->columnRequired($pdoColumn, $requiredLabel)}, {$this->getColumnAttributes($fillable, $pdoColumn)}],\r"
-            );
+            $rules = "{$this->columnRequired($pdoColumn, $requiredLabel)}, {$this->getColumnAttributes($fillable, $pdoColumn)}";
+            $content = $content->append("\n            '$keyName' => [$rules],");
         }
 
-        return $content;
+        return $content->toString();
     }
 
     /**
      * @param string $requiredLabel
-     * @param Model|null $model
+     * @param mixed $model
      * @param string|null $keyPrefix
      * @return string
      */
     private function getFillablesForRequestUsingPivot(string $requiredLabel = 'required', mixed $model = null, ?string $keyPrefix = null): string
     {
         $fillables = $model->getPivotColumns();
-
         $pdoColumns = $this->getPDOColumns($model);
         $relatedPdoColumn = $this->getPDOColumns($model->getModel())->firstWhere('name', 'id');
-
         $keyName = $keyPrefix ? "$keyPrefix." : "";
 
-        $content = str("
-            '{$keyName}id' => [{$this->columnRequired($relatedPdoColumn, $requiredLabel)}, {$this->getColumnAttributes('id', $relatedPdoColumn)}],\r");
+        $idRules = "{$this->columnRequired($relatedPdoColumn, $requiredLabel)}, {$this->getColumnAttributes('id', $relatedPdoColumn)}";
+        $content = str("\n            '{$keyName}id' => [$idRules],");
 
         foreach ($fillables as $fillable) {
             $pdoColumn = $pdoColumns->firstWhere('name', $fillable);
 
             if ($pdoColumn === null) {
-                $this->error("Column $fillable does not exists within your database scheme.");
                 continue;
             }
 
-            $content = $content->append("
-            '$keyName$fillable' => [{$this->columnRequired($pdoColumn, $requiredLabel)}, {$this->getColumnAttributes($fillable, $pdoColumn)}],\r");
+            $rules = "{$this->columnRequired($pdoColumn, $requiredLabel)}, {$this->getColumnAttributes($fillable, $pdoColumn)}";
+            $content = $content->append("\n            '$keyName$fillable' => [$rules],");
         }
 
-        return $content;
+        return $content->toString();
     }
 
     /**
@@ -647,7 +768,7 @@ class MakeApiResource extends Command
 
             return collect(DB::connection($connection)
                     ->getSchemaBuilder()
-                    ->getColumns(str($model->getTable())->afterLast('.')));
+                    ->getColumns(str($model->getTable())->afterLast('.')->toString()));
         } catch (Throwable $ex) {
             return collect([]);
         }
@@ -683,10 +804,8 @@ class MakeApiResource extends Command
                 continue;
             }
 
-
             if ($this->getClassName($relation) === 'BelongsTo' && $object->getForeignKeyName() === $column) {
                 $model = get_class($object->getModel());
-
                 return "\$this->ruleExists(new \\$model())";
             }
         }
@@ -695,11 +814,15 @@ class MakeApiResource extends Command
     }
 
     /**
-     * @param array $pdoColumn
+     * @param array|null $pdoColumn
      * @return string
      */
-    private function getColumnType(array $pdoColumn)
+    private function getColumnType(?array $pdoColumn)
     {
+        if (!$pdoColumn) {
+            return "'string'";
+        }
+
         switch ($pdoColumn['type_name'] ?? '') {
             case "char":
                 return "'uuid'";
@@ -707,16 +830,18 @@ class MakeApiResource extends Command
                 $max = str($pdoColumn['type'])->between('(', ')');
                 return "'string', 'max:$max', 'min:1'";
             case "datetime":
-                return "'date_format:Y-m-d H:i:s'";
             case "timestamp":
                 return "'date_format:Y-m-d H:i:s'";
             case "int":
+            case "bigint":
                 return "'int'";
             case "tinyint":
                 return "'boolean'";
             case "json":
                 return "'array'";
             case "double":
+            case "decimal":
+            case "float":
                 return "'numeric'";
             case "enum":
                 $items = str($pdoColumn['type'])->between('(', ')')->replace("'", '');
@@ -745,18 +870,14 @@ class MakeApiResource extends Command
     /**
      * @param string $path
      * @param string $content
+     * @param bool $forceOverwrite
      * @return void
      */
-    private function storeFile(string $path, string $content): void
+    private function storeFile(string $path, string $content, bool $forceOverwrite = false): void
     {
         $name = str($path)->afterLast('/');
 
-        if (File::exists($path) && $this->confirm("$name already exists, overwrite it?", true)) {
-            $this->info("Created: $name");
-            File::put($path, $content);
-        }
-
-        if (!File::exists($path)) {
+        if ($forceOverwrite || $this->shouldOverwrite($path)) {
             File::put($path, $content);
             $this->info("Created: $name");
         }
@@ -773,24 +894,40 @@ class MakeApiResource extends Command
 
         if (File::exists($path)) {
             File::put($path, $content);
-            $this->info("Created: $name");
+            $this->info("Updated: $name");
+        } else {
+            $this->error("File $name does not exist");
+        }
+    }
+
+    /**
+     * Helper to determine if a file should be written based on existence and force flag.
+     *
+     * @param string $path
+     * @return bool
+     */
+    private function shouldOverwrite(string $path): bool
+    {
+        $name = str($path)->afterLast('/');
+
+        if (File::exists($path)) {
+            if ($this->option('force')) {
+                return true;
+            }
+            return $this->confirm("$name already exists, overwrite it?", true);
         }
 
-        if (!File::exists($path)) {
-            $this->error("File $name does not exists");
-        }
+        return true;
     }
 
     /**
      * @param string $path
      * @return void
      */
-    private function deleteDirectory(string $path): void
+    private function ensureDirectoryExists(string $path): void
     {
-        $name = str($path)->afterLast('');
-
-        if (File::isDirectory($path) && $this->confirm("$name already directory exists, delete the directory?", true)) {
-            File::deleteDirectory($path);
+        if (!File::isDirectory($path)) {
+            File::makeDirectory($path, 0755, true);
         }
     }
 
@@ -810,6 +947,22 @@ class MakeApiResource extends Command
                 ->betweenFirst('namespace ', ';')
                 ->append('\\')
                 ->append($file->getFilename())
-                ->replace('.php', '');
+                ->replace('.php', '')
+                ->toString();
+    }
+
+    /**
+     * Output helpful route suggestion.
+     *
+     * @return void
+     */
+    private function displayRouteSuggestion(): void
+    {
+        $controllerName = "Api{$this->config->modelName}Controller";
+        $controllerNamespace = $this->getConfig('namespaces.controllers');
+        $resourceName = str($this->config->modelPlural)->snake('-');
+
+        $this->comment("Add the following line to your routes/api.php:");
+        $this->output->block("Route::apiResource('$resourceName', \\$controllerNamespace\\$controllerName::class);", null, 'fg=yellow', '  ');
     }
 }
