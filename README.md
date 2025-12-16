@@ -117,6 +117,36 @@ The generator recognizes a wide range of Eloquent relationships and generates th
 - HasManyThrough
 - MorphedByMany
 
+## Controlling Generation
+You can control which relations are included in the generated API using the `#[SkipApiGeneration]` attribute on your model methods. This attribute accepts an array of scopes to skip:
+
+- `SkipApiGeneration::ALL` (default): Skips generation for everything.
+- `SkipApiGeneration::ACTIONS`: Skips generation in Store/Update actions (making the relation read-only).
+- `SkipApiGeneration::REQUESTS`: Skips validation rules in Requests.
+- `SkipApiGeneration::RESOURCE`: Skips inclusion in the API Resource.
+
+**Example**
+```php
+use SingleQuote\LaravelApiResource\Attributes\SkipApiGeneration;
+
+class User extends Model
+{
+    // Completely ignore this relation
+    #[SkipApiGeneration]
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    // Read-only: visible in resource, but not updateable via API
+    #[SkipApiGeneration([SkipApiGeneration::ACTIONS, SkipApiGeneration::REQUESTS])]
+    public function logs()
+    {
+        return $this->hasMany(Log::class);
+    }
+}
+```
+
 This single command creates the following file structure, ready for you to add your business logic:
 
 ```plaintext
