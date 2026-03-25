@@ -11,7 +11,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use ReflectionMethod;
-use SingleQuote\LaravelApiResource\Attributes\SkipApiGeneration; // Aangepaste import
+use SingleQuote\LaravelApiResource\Attributes\SkipApiGeneration;
 use SingleQuote\LaravelApiResource\Generator\StubGenerator;
 use SingleQuote\LaravelApiResource\Infra\ApiModel;
 use SingleQuote\LaravelApiResource\Traits\HasApi;
@@ -233,12 +233,10 @@ class MakeApiResource extends Command
             $attributeInstance = $attributes[0]->newInstance();
             $skips = $attributeInstance->skips;
 
-            // Als 'all' erin staat, altijd negeren
             if (in_array(SkipApiGeneration::ALL, $skips)) {
                 return true;
             }
 
-            // Check of de specifieke scope genegeerd moet worden
             return in_array($scope, $skips);
 
         } catch (Throwable $e) {
@@ -250,21 +248,23 @@ class MakeApiResource extends Command
      * @param string $configName
      * @param mixed $default
      * @param bool $replaceKeys
-     * @return string
+     * @return mixed
      */
-    private function getConfig(string $configName, mixed $default = null, bool $replaceKeys = true): string
+    private function getConfig(string $configName, mixed $default = null, bool $replaceKeys = true): mixed
     {
         $config = config("laravel-api-resource.$configName", $default);
 
-        if (str($config)->contains('module') && !$replaceKeys) {
-            return str($config)->replace('{module}', '')->toString();
+        if (is_string($config)) {
+            if (str($config)->contains('module') && !$replaceKeys) {
+                return str($config)->replace('{module}', '')->toString();
+            }
+
+            if (str($config)->contains('module') && $this->hasOption('module')) {
+                return str($config)->replace('{module}', $this->option('module'))->toString();
+            }
         }
 
-        if (str($config)->contains('module') && $this->hasOption('module')) {
-            return str($config)->replace('{module}', $this->option('module'))->toString();
-        }
-
-        return (string) $config;
+        return $config;
     }
 
     /**
@@ -358,7 +358,6 @@ class MakeApiResource extends Command
         $content = str('');
 
         foreach ($relations as $relation) {
-            // Check scope 'actions'
             if ($this->shouldIgnoreRelation($relation, SkipApiGeneration::ACTIONS)) {
                 continue;
             }
@@ -366,7 +365,7 @@ class MakeApiResource extends Command
             $className = $this->getClassName($relation);
 
             if (
-                in_array($relation, config('laravel-api-resource.exclude.resources', []))
+                in_array($relation, (array) $this->getConfig('exclude.resources', []))
                 || !in_array($className, $this->relationTypes)
             ) {
                 continue;
@@ -398,7 +397,6 @@ class MakeApiResource extends Command
         $lower = str($this->config->modelName)->lcFirst()->toString();
 
         foreach ($relations as $relation) {
-            // Check scope 'actions'
             if ($this->shouldIgnoreRelation($relation, SkipApiGeneration::ACTIONS)) {
                 continue;
             }
@@ -406,7 +404,7 @@ class MakeApiResource extends Command
             $className = $this->getClassName($relation);
 
             if (
-                in_array($relation, config('laravel-api-resource.exclude.resources', []))
+                in_array($relation, (array) $this->getConfig('exclude.resources', []))
                 || !in_array($className, $this->relationTypes)
             ) {
                 continue;
@@ -452,9 +450,10 @@ class MakeApiResource extends Command
     {
         $fillables = ApiModel::fillable($this->config->model);
         $content = str('');
+        $excludeResources = (array) $this->getConfig('exclude.resources', []);
 
         foreach ($fillables as $fillable) {
-            if (in_array($fillable, config('laravel-api-resource.exclude.resources', []))) {
+            if (in_array($fillable, $excludeResources)) {
                 continue;
             }
 
@@ -471,14 +470,15 @@ class MakeApiResource extends Command
     {
         $relations = ApiModel::relations($this->config->model, false);
         $content = str('');
+        $addedPivots = [];
+        $excludeResources = (array) $this->getConfig('exclude.resources', []);
 
         foreach ($relations as $relation) {
-            // Check scope 'resource'
             if ($this->shouldIgnoreRelation($relation, SkipApiGeneration::RESOURCE)) {
                 continue;
             }
 
-            if (in_array($relation, config('laravel-api-resource.exclude.resources', []))) {
+            if (in_array($relation, $excludeResources)) {
                 continue;
             }
 
@@ -488,19 +488,38 @@ class MakeApiResource extends Command
                 continue;
             }
 
+            $className = $this->getClassName($relation);
+
+            // Add pivot columns for BelongsToMany / MorphToMany relations
+            if (in_array($className, ['BelongsToMany', 'MorphToMany', 'MorphedByMany'])) {
+                $pivotColumns = $object->getPivotColumns();
+                $pivotTable = $object->getTable();
+
+                foreach ($pivotColumns as $pivotColumn) {
+                    if (in_array($pivotColumn, $excludeResources)) {
+                        continue;
+                    }
+
+                    // Make sure we don't output duplicate array keys if multiple pivots share a column name
+                    if (!in_array($pivotColumn, $addedPivots)) {
+                        $content = $content->append("\n            '$pivotColumn' => \$this->whenPivotLoaded('$pivotTable', fn () => \$this->pivot->$pivotColumn),");
+                        $addedPivots[] = $pivotColumn;
+                    }
+                }
+            }
+
             $namespace = $this->getRelatedResource($object, $relation, $this->hasOption('module'));
 
             if (!$namespace) {
                 continue;
             }
 
-            $className = $this->getClassName($relation);
-
             if (in_array($className, $this->singleRelations)) {
                 $type = "new \\$namespace";
             } else {
                 $type = "\\$namespace::collection";
             }
+            
             $content = $content->append("\n            '$relation' => $type(\$this->whenLoaded('$relation')),");
         }
 
@@ -622,9 +641,10 @@ class MakeApiResource extends Command
         $useModel = $model ?? $this->config->model;
         $fillables = ApiModel::fillable($useModel);
         $content = str('');
+        $excludeRequests = (array) $this->getConfig('exclude.requests', []);
 
         foreach ($fillables as $fillable) {
-            if (in_array($fillable, config('laravel-api-resource.exclude.requests', [])) || $useModel->getKeyName() === $fillable) {
+            if (in_array($fillable, $excludeRequests) || $useModel->getKeyName() === $fillable) {
                 continue;
             }
 
@@ -647,14 +667,14 @@ class MakeApiResource extends Command
     {
         $relations = ApiModel::relations($this->config->model, false);
         $content = str('');
+        $excludeResources = (array) $this->getConfig('exclude.resources', []);
 
         foreach ($relations as $relation) {
-            // Check scope 'requests'
             if ($this->shouldIgnoreRelation($relation, SkipApiGeneration::REQUESTS)) {
                 continue;
             }
 
-            if (in_array($relation, config('laravel-api-resource.exclude.resources', []))) {
+            if (in_array($relation, $excludeResources)) {
                 continue;
             }
 
@@ -663,7 +683,42 @@ class MakeApiResource extends Command
             $isSingle = in_array($className, $this->singleRelations);
             $prefix = $isSingle ? $relation : "$relation.*";
 
-            $content = $content->append($this->getAttributesForRequest($object->getModel(), $prefix));
+            // Use the specific relation attributes function to only translate IDs and pivot columns
+            $content = $content->append($this->getRelationSpecificAttributes($object, $className, $prefix));
+        }
+
+        return $content->toString();
+    }
+
+    /**
+     * @param mixed $relationObject
+     * @param string $className
+     * @param string $prefix
+     * @return string
+     */
+    private function getRelationSpecificAttributes(mixed $relationObject, string $className, string $prefix): string
+    {
+        $content = str('');
+        $relatedModel = $relationObject->getModel();
+        $excludeRequests = (array) $this->getConfig('exclude.requests', []);
+        
+        $translationPrefix = str($this->getConfig('namespaces.translations'))->lower();
+        $slugged = str(get_class($relatedModel))->afterLast('\\')->snake()->lower()->plural()->replace('_', '-');
+        
+        // Output translation string specifically for the relation ID
+        $idKey = str("$translationPrefix$slugged.Id")->ltrim('.');
+        $content = $content->append("\n\n            '$prefix.id' => __('$idKey'),");
+
+        // Include translation for Pivot columns if relation handles a pivot structure
+        if (in_array($className, ['BelongsToMany', 'MorphToMany', 'MorphedByMany'])) {
+            foreach ($relationObject->getPivotColumns() as $pivotColumn) {
+                if (in_array($pivotColumn, $excludeRequests)) {
+                    continue;
+                }
+                $translateKeyName = str($pivotColumn)->ucfirst()->replace(['-', '_'], ' ');
+                $key = str("$translationPrefix$slugged.$translateKeyName")->ltrim('.');
+                $content = $content->append("\n            '$prefix.$pivotColumn' => __('$key'),");
+            }
         }
 
         return $content->toString();
@@ -677,16 +732,16 @@ class MakeApiResource extends Command
     {
         $relations = ApiModel::relations($this->config->model, false);
         $content = str('');
+        $excludeResources = (array) $this->getConfig('exclude.resources', []);
 
         foreach ($relations as $relation) {
-            // Check scope 'requests'
             if ($this->shouldIgnoreRelation($relation, SkipApiGeneration::REQUESTS)) {
                 continue;
             }
 
             $className = $this->getClassName($relation);
 
-            if (in_array($relation, config('laravel-api-resource.exclude.resources', [])) || !in_array($className, $this->relationTypes)) {
+            if (in_array($relation, $excludeResources) || !in_array($className, $this->relationTypes)) {
                 continue;
             }
 
@@ -694,14 +749,14 @@ class MakeApiResource extends Command
 
             if (in_array($className, ['BelongsToMany', 'MorphToMany', 'MorphedByMany'])) {
                 $pivotFillables = $this->getFillablesForRequestUsingPivot($requiredLabel, $object, "$relation.*");
-                $content = $content->append("\n            '$relation' => ['nullable', 'array'],$pivotFillables");
+                $content = $content->append("\n\n            '$relation' => ['nullable', 'array'],$pivotFillables");
             } else {
                 $isSingle = in_array($className, $this->singleRelations);
                 $prefix = $isSingle ? $relation : "$relation.*";
                 $rule = "['nullable', 'array']";
 
                 $relationFillables = $this->getFillablesForRequestRelation($requiredLabel, $object->getModel(), $prefix, [$object->getForeignKeyName()]);
-                $content = $content->append("\n            '$relation' => $rule,$relationFillables");
+                $content = $content->append("\n\n            '$relation' => $rule,$relationFillables");
             }
         }
 
@@ -721,11 +776,12 @@ class MakeApiResource extends Command
         $fillables = ApiModel::fillable($useModel);
         $pdoColumns = $this->getPDOColumns($useModel);
         $content = str("");
+        $excludeRequests = (array) $this->getConfig('exclude.requests', []);
 
         foreach ($fillables as $fillable) {
             $keyName = $keyPrefix ? "$keyPrefix.$fillable" : $fillable;
 
-            if (in_array($fillable, [...config('laravel-api-resource.exclude.requests', []), ...$ignore]) || $useModel->getKeyName() === $fillable) {
+            if (in_array($fillable, [...$excludeRequests, ...$ignore]) || $useModel->getKeyName() === $fillable) {
                 continue;
             }
 
@@ -753,58 +809,51 @@ class MakeApiResource extends Command
     private function getFillablesForRequestRelation(string $requiredLabel = 'required', ?Model $model = null, ?string $keyPrefix = null, array $ignore = []): string
     {
         $useModel = $model ?? $this->config->model;
-        $fillables = ApiModel::fillable($useModel);
-        $pdoColumns = $this->getPDOColumns($useModel);
-        $relatedPdoColumn = $this->getPDOColumns($useModel->getModel())->firstWhere('name', 'id');
+        $relatedClass = get_class($useModel);
         $keyName = $keyPrefix ? "$keyPrefix." : "";
 
-        $idRules = "{$this->columnRequired($relatedPdoColumn, $requiredLabel)}, {$this->getColumnAttributes('id', $relatedPdoColumn)}";
-        $content = str("\n            '{$keyName}id' => [$idRules],");
-
-        foreach ($fillables as $fillable) {
-            $keyName = $keyPrefix ? "$keyPrefix.$fillable" : $fillable;
-
-            if (in_array($fillable, [...config('laravel-api-resource.exclude.requests', []), ...$ignore]) || $useModel->getKeyName() === $fillable) {
-                continue;
-            }
-
-            $pdoColumn = $pdoColumns->firstWhere('name', $fillable);
-
-            if ($pdoColumn === null) {
-                continue;
-            }
-
-            $rules = "{$this->columnRequired($pdoColumn, $requiredLabel)}, {$this->getColumnAttributes($fillable, $pdoColumn)}";
-            $content = $content->append("\n            '$keyName' => [$rules],");
-        }
-
-        return $content->toString();
+        // Specifically validate the ID using ruleExists. Drop iterating all regular fillables.
+        // ID is always required when the relation array/object is provided.
+        $rules = "'required', \$this->ruleExists(new \\$relatedClass())";
+        
+        return str("\n            '{$keyName}id' => [$rules],")->toString();
     }
 
     /**
      * @param string $requiredLabel
-     * @param mixed $model
+     * @param mixed $relationObject
      * @param string|null $keyPrefix
      * @return string
      */
-    private function getFillablesForRequestUsingPivot(string $requiredLabel = 'required', mixed $model = null, ?string $keyPrefix = null): string
+    private function getFillablesForRequestUsingPivot(string $requiredLabel = 'required', mixed $relationObject = null, ?string $keyPrefix = null): string
     {
-        $fillables = $model->getPivotColumns();
-        $pdoColumns = $this->getPDOColumns($model);
-        $relatedPdoColumn = $this->getPDOColumns($model->getModel())->firstWhere('name', 'id');
+        $fillables = $relationObject->getPivotColumns();
+        $pdoColumns = $this->getPDOColumns($relationObject);
+        $relatedModel = $relationObject->getModel();
+        $relatedClass = get_class($relatedModel);
         $keyName = $keyPrefix ? "$keyPrefix." : "";
+        $excludeRequests = (array) $this->getConfig('exclude.requests', []);
 
-        $idRules = "{$this->columnRequired($relatedPdoColumn, $requiredLabel)}, {$this->getColumnAttributes('id', $relatedPdoColumn)}";
+        // Explicitly set ruleExists for relation ID. 
+        // Always required because without an ID, a pivot relation cannot be attached/synced.
+        $idRules = "'required', \$this->ruleExists(new \\$relatedClass())";
         $content = str("\n            '{$keyName}id' => [$idRules],");
 
+        // Validate the pivot columns using their underlying column type from DB
         foreach ($fillables as $fillable) {
+            if (in_array($fillable, $excludeRequests)) {
+                continue;
+            }
+
             $pdoColumn = $pdoColumns->firstWhere('name', $fillable);
 
             if ($pdoColumn === null) {
                 continue;
             }
 
-            $rules = "{$this->columnRequired($pdoColumn, $requiredLabel)}, {$this->getColumnAttributes($fillable, $pdoColumn)}";
+            // Using getColumnType natively instead of getColumnAttributes to bypass false foreign key match attempts inside pivots.
+            // Pivot columns should also be strictly evaluated ('required' instead of $requiredLabel) because sync requires full pivot payloads.
+            $rules = "{$this->columnRequired($pdoColumn, 'required')}, {$this->getColumnType($pdoColumn)}";
             $content = $content->append("\n            '$keyName$fillable' => [$rules],");
         }
 
@@ -931,6 +980,9 @@ class MakeApiResource extends Command
     {
         $name = str($path)->afterLast('/');
 
+        // Remove excessive empty lines (3 or more newlines become exactly 2 newlines = 1 empty line)
+        $content = preg_replace("/\n([ \t]*\n)+/", "\n\n", $content);
+
         if ($forceOverwrite || $this->shouldOverwrite($path)) {
             File::put($path, $content);
             $this->info("Created: $name");
@@ -945,6 +997,9 @@ class MakeApiResource extends Command
     private function updateFile(string $path, string $content): void
     {
         $name = str($path)->afterLast('/');
+
+        // Remove excessive empty lines (3 or more newlines become exactly 2 newlines = 1 empty line)
+        $content = preg_replace("/\n([ \t]*\n)+/", "\n\n", $content);
 
         if (File::exists($path)) {
             File::put($path, $content);
