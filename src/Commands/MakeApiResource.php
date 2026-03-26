@@ -470,7 +470,6 @@ class MakeApiResource extends Command
     {
         $relations = ApiModel::relations($this->config->model, false);
         $content = str('');
-        $addedPivots = [];
         $excludeResources = (array) $this->getConfig('exclude.resources', []);
 
         foreach ($relations as $relation) {
@@ -494,17 +493,19 @@ class MakeApiResource extends Command
             if (in_array($className, ['BelongsToMany', 'MorphToMany', 'MorphedByMany'])) {
                 $pivotColumns = $object->getPivotColumns();
                 $pivotTable = $object->getTable();
+                $pivotLines = [];
 
                 foreach ($pivotColumns as $pivotColumn) {
                     if (in_array($pivotColumn, $excludeResources)) {
                         continue;
                     }
 
-                    // Make sure we don't output duplicate array keys if multiple pivots share a column name
-                    if (!in_array($pivotColumn, $addedPivots)) {
-                        $content = $content->append("\n            '$pivotColumn' => \$this->whenPivotLoaded('$pivotTable', fn () => \$this->pivot->$pivotColumn),");
-                        $addedPivots[] = $pivotColumn;
-                    }
+                    $pivotLines[] = "'$pivotColumn' => \$this->pivot->$pivotColumn,";
+                }
+
+                if (!empty($pivotLines)) {
+                    $inner = implode("\n                ", $pivotLines);
+                    $content = $content->append("\n            ... \$this->whenPivotLoaded('$pivotTable', fn () => [\n                $inner\n            ], []),");
                 }
             }
 
