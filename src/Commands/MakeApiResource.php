@@ -288,6 +288,7 @@ class MakeApiResource extends Command
 
         $newContent = str($content)
             ->replace('<namespace>', $this->getConfig('namespaces.controllers'))
+            ->replace('<module>', $this->hasOption('module') ? $this->option('module') : '')
             ->replace('<modelLower>', str($this->config->modelName)->lcFirst()->toString())
             ->replace('<modelPath>', $this->config->modelPath)
             ->replace('<modelPlural>', $this->config->modelPlural)
