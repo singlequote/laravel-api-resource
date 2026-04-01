@@ -812,11 +812,12 @@ class MakeApiResource extends Command
     {
         $useModel = $model ?? $this->config->model;
         $relatedClass = get_class($useModel);
+        $keyPath = $keyPrefix ? "$keyPrefix" : "";
         $keyName = $keyPrefix ? "$keyPrefix." : "";
 
         // Specifically validate the ID using ruleExists. Drop iterating all regular fillables.
         // ID is always required when the relation array/object is provided.
-        $rules = "'required', \$this->ruleExists(new \\$relatedClass())";
+        $rules = "'required_with:$keyPath', \$this->ruleExists(new \\$relatedClass())";
         
         return str("\n            '{$keyName}id' => [$rules],")->toString();
     }
