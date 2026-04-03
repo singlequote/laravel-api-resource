@@ -288,7 +288,6 @@ class MakeApiResource extends Command
 
         $newContent = str($content)
             ->replace('<namespace>', $this->getConfig('namespaces.controllers'))
-            ->replace('<module>', $this->hasOption('module') ? $this->option('module') : '')
             ->replace('<modelLower>', str($this->config->modelName)->lcFirst()->toString())
             ->replace('<modelPath>', $this->config->modelPath)
             ->replace('<modelPlural>', $this->config->modelPlural)
@@ -380,9 +379,14 @@ class MakeApiResource extends Command
                 $fileType = "Relation";
             }
 
-            $content = $content->append(File::get($this->stubGenerator->getFilePath("Actions/$dir/$fileType")))
+            // Ensure the generated method inside the action is private, not public.
+            $stubContent = str(File::get($this->stubGenerator->getFilePath("Actions/$dir/$fileType")))
+                ->replace('public function', 'private function')
                 ->replace('<ucRelation>', ucfirst($relation))
-                ->replace('<relation>', $relation);
+                ->replace('<relation>', $relation)
+                ->toString();
+
+            $content = $content->append($stubContent);
         }
 
         return $content->toString();
@@ -680,8 +684,14 @@ class MakeApiResource extends Command
                 continue;
             }
 
-            $object = $this->config->model->$relation();
             $className = $this->getClassName($relation);
+
+            // Skip BelongsTo attributes since the nested relation is not included in the request
+            if ($className === 'BelongsTo') {
+                continue;
+            }
+
+            $object = $this->config->model->$relation();
             $isSingle = in_array($className, $this->singleRelations);
             $prefix = $isSingle ? $relation : "$relation.*";
 
@@ -743,6 +753,11 @@ class MakeApiResource extends Command
 
             $className = $this->getClassName($relation);
 
+            // A BelongsTo relation already has its foreign key validated, no need to include the nested object in the request
+            if ($className === 'BelongsTo') {
+                continue;
+            }
+
             if (in_array($relation, $excludeResources) || !in_array($className, $this->relationTypes)) {
                 continue;
             }
@@ -757,7 +772,7 @@ class MakeApiResource extends Command
                 $prefix = $isSingle ? $relation : "$relation.*";
                 $rule = "['nullable', 'array']";
 
-                $relationFillables = $this->getFillablesForRequestRelation($requiredLabel, $object->getModel(), $prefix, [$object->getForeignKeyName()]);
+                $relationFillables = $this->getFillablesForRequestRelation($requiredLabel, $object->getModel(), $prefix, [$object->getForeignKeyName()], $isSingle, $relation);
                 $content = $content->append("\n\n            '$relation' => $rule,$relationFillables");
             }
         }
@@ -806,18 +821,21 @@ class MakeApiResource extends Command
      * @param Model|null $model
      * @param string|null $keyPrefix
      * @param array $ignore
+     * @param bool $isSingle
+     * @param string $relationName
      * @return string
      */
-    private function getFillablesForRequestRelation(string $requiredLabel = 'required', ?Model $model = null, ?string $keyPrefix = null, array $ignore = []): string
+    private function getFillablesForRequestRelation(string $requiredLabel = 'required', ?Model $model = null, ?string $keyPrefix = null, array $ignore = [], bool $isSingle = false, string $relationName = ''): string
     {
         $useModel = $model ?? $this->config->model;
         $relatedClass = get_class($useModel);
-        $keyPath = $keyPrefix ? "$keyPrefix" : "";
         $keyName = $keyPrefix ? "$keyPrefix." : "";
 
+        // If it's a single relation (e.g., HasOne), ID is only required if the relation object itself is present
+        $idRequirement = $isSingle ? "'required_with:$relationName'" : "'required'";
+
         // Specifically validate the ID using ruleExists. Drop iterating all regular fillables.
-        // ID is always required when the relation array/object is provided.
-        $rules = "'required_with:$keyPath', \$this->ruleExists(new \\$relatedClass())";
+        $rules = "$idRequirement, \$this->ruleExists(new \\$relatedClass())";
         
         return str("\n            '{$keyName}id' => [$rules],")->toString();
     }
