@@ -293,6 +293,45 @@ axios.get(route('api.users.index', {
 // GET /api/users?where[date_of_birth][gt]=1995-01-31
 ```
 
+### Multiple where operators
+
+Enables `BETWEEN`-like queries using multiple `where` clauses.
+
+```javascript
+axios.get(route('api.users.index', {
+    where: [{
+        date_of_birth: {
+            lte: "1995-01-30"
+        }
+    }, {
+        date_of_birth: {
+            gte: "1995-01-15",
+        },
+    }],
+}));
+// GET /api/users?where[0][date_of_birth][lte]=1995-01-30&where[1][date_of_birth][gte]=1995-01-15
+```
+
+### orWhere
+
+Adds an alternative `where` clause using `OR` logic.
+
+```javascript
+axios.get(route('api.countries.index', {
+    where: {
+        name: {
+            in: 'Netherlands',
+        },
+    },
+    orWhere: {
+        name: {
+            in: 'Belgium',
+        },
+    },
+}));
+// GET /api/countries?where[name][in]=Netherlands&orWhere[name][in]=Belgium
+```
+
 ### whereJsonContains / whereJsonDoesntContain
 
 Verifies that a column's value is (or is not) within a given array.
