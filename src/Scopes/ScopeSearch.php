@@ -54,10 +54,15 @@ class ScopeSearch
                 continue;
             }
 
-            $search = str($searchable['query'])->lower()->explode(' ');
+            $search = str($searchable['query'])->lower()->replace(' + ', '+')->explode('+');
 
             foreach ($search as $searchKey) {
-                $builder = $builder->orWhereRaw("LOWER($column) LIKE ?", ["%{$searchKey}%"]);
+                
+                if(! str($searchKey)->contains('%')){
+                    $searchKey = "%{$searchKey}%";
+                }
+                
+                $builder = $builder->orWhereRaw("LOWER($column) LIKE ?", [$searchKey]);
             }
         }
 
