@@ -40,7 +40,10 @@ class ScopeSearch
      */
     private static function applySearch(Builder|QueryBuilder $builder, array $searchable): Builder|QueryBuilder
     {
-        $fields = $searchable['fields'][0] === '*' ? ApiModel::fillable($builder->getModel()) : $searchable['fields'];
+        $fillable = ApiModel::fillable($builder->getModel());
+        $fields = $searchable['fields'][0] === '*' ? $fillable : $searchable['fields'];
+        $allowed = [...$fillable, 'created_at', 'updated_at', 'deleted_at'];
+        $lower = config('laravel-api-resource.search.lower', true);
 
         foreach ($fields ?? [] as $column) {
 
@@ -50,19 +53,21 @@ class ScopeSearch
                 continue;
             }
 
-            if (!in_array(str($column)->before('->')->value(), [...ApiModel::fillable($builder->getModel()), 'created_at', 'updated_at', 'deleted_at'])) {
+            if (!in_array(str($column)->before('->')->value(), $allowed)) {
                 continue;
             }
 
             $search = str($searchable['query'])->lower()->replace(' + ', '+')->explode('+');
 
             foreach ($search as $searchKey) {
-                
-                if(! str($searchKey)->contains('%')){
+
+                if (! str($searchKey)->contains('%')) {
                     $searchKey = "%{$searchKey}%";
                 }
-                
-                $builder = $builder->orWhereRaw("LOWER($column) LIKE ?", [$searchKey]);
+
+                $builder = $lower
+                    ? $builder->orWhereRaw("LOWER($column) LIKE ?", [$searchKey])
+                    : $builder->orWhereRaw("$column LIKE ?", [$searchKey]);
             }
         }
 
@@ -78,8 +83,12 @@ class ScopeSearch
      */
     private static function searchRelation(Builder|QueryBuilder $builder, string $relation, string $column, string $search): Builder|QueryBuilder
     {
-        return $builder->orWhereHas($relation, function (Builder $builder) use ($column, $search) {
-            $builder->whereRaw("LOWER($column) LIKE ?", ["%{$search}%"]);
+        $lower = config('laravel-api-resource.search.lower', true);
+
+        return $builder->orWhereHas($relation, function (Builder $builder) use ($column, $search, $lower) {
+            $lower
+                ? $builder->whereRaw("LOWER($column) LIKE ?", ["%{$search}%"])
+                : $builder->whereRaw("$column LIKE ?", ["%{$search}%"]);
         });
     }
 }

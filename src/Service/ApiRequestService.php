@@ -14,17 +14,38 @@ use function config;
 class ApiRequestService
 {
     /**
+     * In-process memo of the built rule sets, keyed by "model|limit".
+     *
+     * The output of defaults() is fully determined by the model class, the
+     * configured api.limit and the model's fillables/relations (themselves
+     * stable per class). Both variable inputs are part of the key, so a memo
+     * hit is always correct — even when a project varies api.limit per request.
+     * Cleared on deploy/worker restart. Consumers receive a copy-on-write array
+     * (PHP value semantics); the shared Rule objects are stateless.
+     *
+     * @var array<string, array>
+     */
+    private static array $defaultsMemo = [];
+
+    /**
      * @param string $model
      * @return array
      */
     public static function defaults(string $model): array
     {
+        $limit = config('laravel-api-resource.api.limit', 1000);
+        $memoKey = $model . '|' . $limit;
+
+        if (isset(self::$defaultsMemo[$memoKey])) {
+            return self::$defaultsMemo[$memoKey];
+        }
+
         $fillables = ApiModel::getFillable($model);
         $relations = ApiModel::getRelations($model);
 
-        return [
+        return self::$defaultsMemo[$memoKey] = [
             // == Pagination & Sorting ==
-            'limit' => ['nullable', 'int', 'min:1', 'max:' . config('laravel-api-resource.api.limit', 1000)],
+            'limit' => ['nullable', 'int', 'min:1', 'max:' . $limit],
             'orderBy' => ['nullable', 'string', new OrderByRule($model)],
             'orderByDesc' => ['nullable', 'string', new OrderByRule($model)],
 

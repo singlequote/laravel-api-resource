@@ -16,6 +16,23 @@ use function collect;
 class ApiModel
 {
     /**
+     * In-process memo for introspection results. Keyed by "class|flag".
+     *
+     * Fillables/relations are structural: they only change on a code deploy,
+     * which restarts Octane workers and clears this static state. Memoizing here
+     * avoids repeated cache-store round-trips (file/redis) within a request and,
+     * under Octane, across requests in the same worker.
+     *
+     * @var array<string, array>
+     */
+    private static array $relationsMemo = [];
+
+    /**
+     * @var array<string, Collection>
+     */
+    private static array $fillableMemo = [];
+
+    /**
      * @param string|Model $modelClass
      * @param bool $withSubRelations
      * @return string
@@ -44,9 +61,15 @@ class ApiModel
      */
     public static function relations(Model $model, bool $withSubRelations = true): array
     {
+        $memoKey = $model::class . '|' . ($withSubRelations ? '1' : '0');
+
+        if (isset(self::$relationsMemo[$memoKey])) {
+            return self::$relationsMemo[$memoKey];
+        }
+
         $cacheKey = str($model::class)->prepend('relations-')->append('-wr-')->append($withSubRelations ? 'true' : 'false')->slug()->value();
 
-        return cache()->remember($cacheKey, config('laravel-api-resource.cache.relations', 3600), function () use ($model, $withSubRelations) {
+        return self::$relationsMemo[$memoKey] = cache()->remember($cacheKey, config('laravel-api-resource.cache.relations', 3600), function () use ($model, $withSubRelations) {
 
             $relations = $model->definedRelations();
 
@@ -100,9 +123,15 @@ class ApiModel
      */
     public static function fillable(Model $model, bool $withRelations = false): Collection
     {
+        $memoKey = $model::class . '|' . ($withRelations ? '1' : '0');
+
+        if (isset(self::$fillableMemo[$memoKey])) {
+            return self::$fillableMemo[$memoKey];
+        }
+
         $cacheKey = str($model::class)->prepend('fillables-')->append('-wr-')->append($withRelations ? 'true' : 'false')->slug()->value();
 
-        return cache()->remember($cacheKey, config('laravel-api-resource.cache.fillables', 3600), function () use ($model, $withRelations) {
+        return self::$fillableMemo[$memoKey] = cache()->remember($cacheKey, config('laravel-api-resource.cache.fillables', 3600), function () use ($model, $withRelations) {
             $timestamps = config('laravel-api-resource.columns.default', [
                 'id',
                 'created_at',

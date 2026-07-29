@@ -267,6 +267,27 @@ axios.get(route('api.users.index', {
 // GET /api/users?search[fields][0]=name&search[fields][1]=email&search[query]=john
 ```
 
+#### Case-insensitivity & performance (`search.lower`)
+
+By default the search wraps every column in `LOWER(...)` so matching is
+case-insensitive regardless of your database collation. On large tables this
+adds a per-row `LOWER()` evaluation.
+
+If your columns already use a **case-insensitive collation** (e.g. MySQL `*_ci`),
+you can drop that overhead — results stay identical — by publishing the config
+and setting:
+
+```php
+// config/laravel-api-resource.php
+'search' => [
+    'lower' => false,
+],
+```
+
+Keep it `true` (the default) on **case-sensitive** collations (MySQL `*_bin`) and
+on **PostgreSQL**, where `LIKE` is case-sensitive and the `LOWER()` wrapping is
+required for case-insensitive matching.
+
 ### where
 
 Add "where" clauses. You can also provide an operator (`gt`, `lt`, `sw`, etc.).
@@ -446,6 +467,12 @@ Sort the results by a given column, including columns on related models.
 axios.get(route('api.users.index', { orderBy: 'roles.name' }));
 // GET /api/users?orderBy=roles.name
 ```
+
+When sorting on a related column, records that have **no** related row are kept
+(they are not filtered out). For "to-many" relations (`hasMany`/`morphMany`) the
+sort uses a correlated subquery, so parent rows are never duplicated and
+pagination totals stay correct. Sorting on a `morphTo` column is undefined and is
+ignored.
 
 ### Custom Orderable Columns
 

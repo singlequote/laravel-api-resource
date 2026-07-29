@@ -17,20 +17,24 @@ final class ApiPolicyService
      */
     public static function defaults(Model $model, array $addition = []): array
     {
-        $keys = collect($addition)->flatMap(function (string $abbility) use ($model) {
+        // On public/unauthenticated endpoints there is no user; calling ->can()
+        // on null would fatal. Fall back to denying every ability instead.
+        $user = auth()->user();
+
+        $keys = collect($addition)->flatMap(function (string $abbility) use ($user, $model) {
             return [
-                $abbility => auth()->user()->can($abbility, $model),
+                $abbility => $user?->can($abbility, $model) ?? false,
             ];
         })->toArray();
 
         return [
-            'viewAny' => auth()->user()->can('viewAny', $model::class),
-            'view' => auth()->user()->can('view', $model),
-            'create' => auth()->user()->can('create', $model::class),
-            'update' => auth()->user()->can('update', $model),
-            'delete' => auth()->user()->can('delete', $model),
-            'restore' => auth()->user()->can('restore', $model),
-            'forceDelete' => auth()->user()->can('forceDelete', $model),
+            'viewAny' => $user?->can('viewAny', $model::class) ?? false,
+            'view' => $user?->can('view', $model) ?? false,
+            'create' => $user?->can('create', $model::class) ?? false,
+            'update' => $user?->can('update', $model) ?? false,
+            'delete' => $user?->can('delete', $model) ?? false,
+            'restore' => $user?->can('restore', $model) ?? false,
+            'forceDelete' => $user?->can('forceDelete', $model) ?? false,
             ... $keys,
         ];
     }

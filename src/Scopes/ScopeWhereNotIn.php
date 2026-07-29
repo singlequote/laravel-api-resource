@@ -21,7 +21,9 @@ class ScopeWhereNotIn
                 continue;
             }
 
-            $builder->whereNotIn($column, $scope);
+            // Qualify with the table name so the clause stays unambiguous once a
+            // join is present (e.g. when combined with relation ordering).
+            $builder->whereNotIn("{$builder->getModel()->getTable()}.$column", $scope);
         }
 
         return $builder;

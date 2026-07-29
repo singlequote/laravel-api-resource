@@ -25,12 +25,15 @@ class ScopeWhereJsonContains
     {
         foreach ($validated ?? [] as $column => $scope) {
 
-            if (!self::isJsonColumn($builder, $column)) {
+            // List form (e.g. whereJsonContains[0][col]=...): recurse into each
+            // group. This must run before the isJsonColumn() guard, which would
+            // otherwise reject the integer key and drop the group entirely.
+            if (is_integer($column)) {
+                $builder = self::handle($builder, $scope, $type);
                 continue;
             }
 
-            if (is_integer($column)) {
-                $builder = self::handle($builder, $scope, $type);
+            if (!self::isJsonColumn($builder, $column)) {
                 continue;
             }
 

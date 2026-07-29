@@ -61,6 +61,23 @@ return [
         'limit' => 1000,
     ],
 
+    'search' => [
+        /*
+        |--------------------------------------------------------------------------
+        | Lower-case wrapping
+        |--------------------------------------------------------------------------
+        | When true (default), search comparisons wrap the column in LOWER() to
+        | force case-insensitive matching regardless of the database collation.
+        |
+        | If your database columns already use a case-insensitive collation
+        | (e.g. MySQL *_ci), you can set this to false. Doing so drops the
+        | per-row LOWER() evaluation on large scans while keeping identical
+        | results. Keep it true on case-sensitive collations (e.g. MySQL *_bin)
+        | and on PostgreSQL, where LIKE is case-sensitive.
+       */
+        'lower' => true,
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Cache
