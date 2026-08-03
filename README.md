@@ -333,6 +333,45 @@ axios.get(route('api.users.index', {
 // GET /api/users?where[0][date_of_birth][lte]=1995-01-30&where[1][date_of_birth][gte]=1995-01-15
 ```
 
+### Grouped conditions (`$or` / `$and`)
+
+Use the `$or` / `$and` sentinel keys inside `where` (or `orWhere`) to wrap
+sub-conditions in a parenthesized group. The group is attached to the rest of the
+query with the surrounding boolean (`AND` by default); inside the group the
+sub-conditions are combined with the group's own boolean. Groups may be nested.
+
+This makes null-safe filters possible, e.g. "hide rows explicitly flagged `true`,
+but keep rows that are `false` **or** where the key is missing":
+
+```javascript
+axios.get(route('api.schedules.index', {
+    where: {
+        end: { lte: '2026-08-03 12:00' },
+        $or: [
+            { 'custom_fields->hide_from_dashboard': { neq: 'true' } },
+            { 'custom_fields->hide_from_dashboard': 'null' },
+        ],
+    },
+}));
+// where[end][lte]=...&where[$or][0][custom_fields->hide_from_dashboard][neq]=true&where[$or][1][custom_fields->hide_from_dashboard]=null
+```
+
+Produces roughly:
+
+```sql
+... AND `end` <= ?
+    AND (
+        json_unquote(json_extract(`custom_fields`, '$."hide_from_dashboard"')) != ?
+        OR json_extract(`custom_fields`, '$."hide_from_dashboard"') IS NULL
+    )
+```
+
+Notes:
+- The `'column': 'null'` convention respects the group boolean (it `OR`s inside an
+  `$or` group instead of always `AND`-ing).
+- JSON value comparisons are string-based (`json_unquote`), so pass the value as it
+  is stored — `'true'`/`'false'` for JSON booleans, `'1'`/`'0'` for integers.
+
 ### orWhere
 
 Adds an alternative `where` clause using `OR` logic.

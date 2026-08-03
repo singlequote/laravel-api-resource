@@ -2,6 +2,25 @@
 
 All notable changes to `Laravel Api Resource` will be documented in this file
 
+## [2.4.0] - 2026-08-03
+
+Backwards-compatible release: adds grouped `where` conditions for null-safe
+filters. Existing `where`/`orWhere` usage is unchanged.
+
+### Added
+- **Grouped `where` conditions via the `$or` / `$and` sentinel keys.** A group is
+  attached to the surrounding query with the current boolean and its
+  sub-conditions are combined with the group's own boolean; groups may be nested.
+  This enables null-safe filters such as
+  `where[$or][0][col][neq]=true & where[$or][1][col]=null` →
+  `AND (col != ? OR col IS NULL)`. Works on plain columns and JSON paths
+  (`custom_fields->key`).
+
+### Fixed
+- `ScopeWhere` now passes the surrounding boolean to `whereNull()`/`whereNotNull()`,
+  so a `'column': 'null'` condition inside an `$or` group (or an `orWhere`) is
+  combined with `OR` instead of always `AND`.
+
 ## [2.3.0] - 2026-07-29
 
 Backwards-compatible release: runtime performance improvements, correctness fixes

@@ -31,6 +31,21 @@ class ScopeWhere
                 continue;
             }
 
+            // Grouped conditions: the $or / $and sentinel keys wrap their
+            // sub-conditions in a nested where. The group attaches to the
+            // surrounding query with the current boolean; inside the group the
+            // sub-conditions are combined with the group's own boolean. Groups
+            // may be nested (e.g. $or inside $and).
+            if ($column === '$or' || $column === '$and') {
+                $groupBoolean = $column === '$or' ? 'or' : 'and';
+
+                $builder->where(function ($query) use ($scope, $groupBoolean) {
+                    self::handle($query, (array) $scope, $groupBoolean);
+                }, null, null, $boolean);
+
+                continue;
+            }
+
             [$operator, $value] = Extract::operatorAndValue($scope);
 
             if (str($column)->contains('.') && !self::isJsonColumn($builder, $column)) {
@@ -42,10 +57,12 @@ class ScopeWhere
                 $column = "{$builder->getModel()->getTable()}.$column";
             }
 
+            // Respect the surrounding boolean for null checks too, so null
+            // conditions inside an $or group OR correctly instead of always AND.
             if ($value === 'null' && $operator === '=') {
-                $builder->whereNull($column);
+                $builder->whereNull($column, $boolean);
             } elseif ($value === 'null' && $operator === '!=') {
-                $builder->whereNotNull($column);
+                $builder->whereNotNull($column, $boolean);
             } else {
                 $builder->where($column, $operator, $value, $boolean);
             }
