@@ -4,7 +4,10 @@ namespace SingleQuote\LaravelApiResource\Scopes;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Builder as QueryBuilder;
@@ -61,7 +64,7 @@ class ScopeOrder
             return $builder;
         }
 
-        // To-many relations (HasMany/MorphMany) fan out when joined, producing
+        // Relations that match more than one row fan out when joined, producing
         // duplicate parent rows and breaking pagination. Order by a correlated
         // scalar subquery instead: no join, no duplicates, cross-database safe,
         // and rows without a related record are kept (NULL ordering).
@@ -85,9 +88,9 @@ class ScopeOrder
     }
 
     /**
-     * Build a correlated scalar subquery to order by a to-many relation column
-     * without joining (which would fan out rows). Returns null for relation
-     * types that need the join fallback.
+     * Build a correlated scalar subquery to order by a relation column without
+     * joining (which would fan out rows). Returns null for relation types that
+     * need the join fallback.
      *
      * @param Relation $relation
      * @param string $column
@@ -96,10 +99,7 @@ class ScopeOrder
      */
     private static function relationOrderSubquery(Relation $relation, string $column, string $direction): ?Builder
     {
-        // Only HasMany/MorphMany fan out and expose the keys we need to correlate.
-        // (MorphMany does not extend HasMany — both extend HasOneOrMany — so we
-        // must check for each explicitly.)
-        if (! $relation instanceof HasMany && ! $relation instanceof MorphMany) {
+        if (! self::fansOutWhenJoined($relation)) {
             return null;
         }
 
@@ -115,10 +115,32 @@ class ScopeOrder
             ->select($column)
             ->whereColumn($relation->getQualifiedForeignKeyName(), $relation->getQualifiedParentKeyName());
 
-        if ($relation instanceof MorphMany) {
+        if ($relation instanceof MorphOneOrMany) {
             $sub->where($relation->getQualifiedMorphType(), $relation->getMorphClass());
         }
 
         return $sub->orderBy($column, $direction)->limit(1);
+    }
+
+    /**
+     * Whether joining this relation can produce more than one row per parent.
+     *
+     * A to-many relation always can. A to-one relation normally cannot, except
+     * when it is a one-of-many (latestOfMany, oldestOfMany, ofMany): the join
+     * driver matches on the foreign key alone and ignores the aggregate that
+     * picks the single row, so every related record comes back.
+     *
+     * @param Relation $relation
+     * @return bool
+     */
+    private static function fansOutWhenJoined(Relation $relation): bool
+    {
+        // MorphMany does not extend HasMany - both extend HasOneOrMany - so the
+        // to-many types are checked for separately.
+        if ($relation instanceof HasMany || $relation instanceof MorphMany) {
+            return true;
+        }
+
+        return ($relation instanceof HasOne || $relation instanceof MorphOne) && $relation->isOneOfMany();
     }
 }

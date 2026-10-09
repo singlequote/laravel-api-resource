@@ -2,6 +2,28 @@
 
 All notable changes to `Laravel Api Resource` will be documented in this file
 
+## [2.4.1] - 2026-10-09
+
+Bugfix release: ordering by a one-of-many relation column no longer duplicates
+parent rows.
+
+### Fixed
+- **`ScopeOrder` fanned out on one-of-many relations.** A relation built with
+  `latestOfMany()`, `oldestOfMany()` or `ofMany()` is a `HasOne`/`MorphOne`, so
+  it fell through to the `leftJoinRelation()` fallback. That join matches on the
+  foreign key alone and ignores the aggregate that picks the single row, so every
+  related record produced a parent row: in a real data set, ordering 15.592
+  clients by `latestTimesheet.created_at` returned 95.400 rows and broke
+  pagination. These relations now take the same correlated-subquery path as
+  `HasMany`/`MorphMany`. Plain to-one relations (`BelongsTo`, a `HasOne` without
+  an aggregate) keep using the join, which is exact and cheaper.
+
+  Note: the subquery orders by the sorted column itself, so it reads the
+  `MAX`/`MIN` of that column rather than the row the aggregate selects. For a
+  relation whose aggregate is on another column (`latestOfMany()` defaults to
+  `MAX(id)`) the sorted value can differ from the displayed one when the two
+  columns do not run in the same order.
+
 ## [2.4.0] - 2026-08-03
 
 Backwards-compatible release: adds grouped `where` conditions for null-safe
