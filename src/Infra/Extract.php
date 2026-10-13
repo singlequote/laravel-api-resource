@@ -10,11 +10,15 @@ namespace SingleQuote\LaravelApiResource\Infra;
 class Extract
 {
     /**
-     * @param string|array $scope
+     * A condition without a value is read as the 'null' marker.
+     *
+     * @param string|array|null $scope
      * @return array
      */
-    public static function operatorAndValue(string|array $scope): array
+    public static function operatorAndValue(string|array|null $scope): array
     {
+        $scope ??= 'null';
+
         $operator = is_array($scope) ? Operator::toSql(array_key_first($scope)) : '=';
         $value = is_array($scope) ? $scope[array_key_first($scope)] : $scope;
 

@@ -2,6 +2,22 @@
 
 All notable changes to `Laravel Api Resource` will be documented in this file
 
+## [2.4.2] - 2026-10-13
+
+Bugfix release: two filter paths that ended in a 500 now work.
+
+### Fixed
+- **A `where`/`orWhere` condition without a value threw a `TypeError`.**
+  `Extract::operatorAndValue()` only accepted `string|array`, so `where[col]=`
+  (turned into `null` by `ConvertEmptyStringsToNull`) or a `null` value from an
+  in-process request crashed. A missing value is now read as the existing
+  `'null'` marker, i.e. `whereNull()`. The type hints of
+  `ScopeWhere::handleRelation()` and `ScopeWhereRelation::build()` accept it too.
+- **Relation introspection failed on related models without `HasApi`.**
+  `ApiModel::relations()` called `definedRelations()`, which only exists on the
+  trait, so a related model without it threw a `BadMethodCallException`. It now
+  falls back to the same return-type reflection.
+
 ## [2.4.1] - 2026-10-09
 
 Bugfix release: ordering by a one-of-many relation column no longer duplicates

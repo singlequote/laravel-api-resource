@@ -4,6 +4,8 @@ namespace SingleQuote\LaravelApiResource\Infra;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use ReflectionClass;
+use ReflectionMethod;
 use Throwable;
 
 use function collect;
@@ -71,7 +73,7 @@ class ApiModel
 
         return self::$relationsMemo[$memoKey] = cache()->remember($cacheKey, config('laravel-api-resource.cache.relations', 3600), function () use ($model, $withSubRelations) {
 
-            $relations = $model->definedRelations();
+            $relations = self::definedRelations($model);
 
             $additionalRelations = $withSubRelations ? ($model->apiRelations ?? []) : [];
 
@@ -151,5 +153,23 @@ class ApiModel
                 return !in_array($fill, $hidden);
             });
         });
+    }
+
+    /**
+     * Relation methods of a model, also for models without the HasApi trait.
+     *
+     * @param Model $model
+     * @return array
+     */
+    private static function definedRelations(Model $model): array
+    {
+        if (method_exists($model, 'definedRelations')) {
+            return $model->definedRelations();
+        }
+
+        return collect((new ReflectionClass($model))->getMethods())
+            ->filter(fn (ReflectionMethod $method) => str_contains((string) $method->getReturnType(), 'Illuminate\Database\Eloquent\Relations'))
+            ->pluck('name')
+            ->all();
     }
 }

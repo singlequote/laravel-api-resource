@@ -75,10 +75,10 @@ class ScopeWhere
      * @param Builder|QueryBuilder $builder
      * @param string $boolean
      * @param string $column
-     * @param array $scope
+     * @param string|array|null $scope
      * @return Builder|QueryBuilder
      */
-    public static function handleRelation(Builder|QueryBuilder $builder, string $boolean, string $column, array $scope): Builder|QueryBuilder
+    public static function handleRelation(Builder|QueryBuilder $builder, string $boolean, string $column, string|array|null $scope): Builder|QueryBuilder
     {
         $localColumn = str($column)->before('.')->value();
         $foreignColumn = str($column)->after('.')->value();

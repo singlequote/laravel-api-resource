@@ -33,10 +33,10 @@ class ScopeWhereRelation
      * @param Builder|QueryBuilder $builder
      * @param string $relation
      * @param string $key
-     * @param string|array $scopeValue
+     * @param string|array|null $scopeValue
      * @return Builder|QueryBuilder
      */
-    private static function build(Builder|QueryBuilder $builder, string $relation, string $key, string|array $scopeValue, string $boolean): Builder|QueryBuilder
+    private static function build(Builder|QueryBuilder $builder, string $relation, string $key, string|array|null $scopeValue, string $boolean): Builder|QueryBuilder
     {
         [$operator, $value] = Extract::operatorAndValue($scopeValue);
 
